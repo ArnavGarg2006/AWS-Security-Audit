@@ -8,6 +8,10 @@ lambda-s3-audit-webapp/s3_audit_report.html
 
 # Build artifact - rebuild with: zip function.zip lambda_function.py
 lambda-s3-audit-webapp/function.zip
+fullstack-contact-app/backend/function.zip
+
+# Generated deploy copy with the live API URL baked in - regenerate at deploy time
+fullstack-contact-app/frontend/index.deployed.html
 
 # Local settings
 .claude/settings.local.json

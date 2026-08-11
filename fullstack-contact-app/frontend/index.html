@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Get in Touch</title>
+<style>
+  :root {
+    --bg1: #0f0c29;
+    --bg2: #302b63;
+    --bg3: #24243e;
+    --accent: #7f5af0;
+    --accent2: #2cb67d;
+    --card: rgba(255,255,255,0.06);
+    --text: #fffffe;
+    --muted: #a7a9be;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(-45deg, var(--bg1), var(--bg2), var(--bg3), #1a1a2e);
+    background-size: 400% 400%;
+    animation: gradientShift 15s ease infinite;
+    color: var(--text);
+    padding: 1.5rem;
+  }
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+  .card {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    animation: floatIn 0.6s ease;
+  }
+  @keyframes floatIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .emoji { font-size: 2.2rem; display: block; text-align: center; margin-bottom: 0.5rem; }
+  h1 { font-size: 1.4rem; text-align: center; margin: 0 0 0.4rem; }
+  p.sub { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 1.8rem; }
+  label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.35rem; }
+  input {
+    width: 100%;
+    padding: 0.75rem 0.9rem;
+    margin-bottom: 1.1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.25);
+    color: var(--text);
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s, transform 0.1s;
+  }
+  input:focus { border-color: var(--accent); }
+  input.shake { animation: shake 0.4s; border-color: #ff6b6b; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+  }
+  button {
+    width: 100%;
+    padding: 0.85rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #5b3fc0);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(127,90,240,0.4); }
+  button:disabled { opacity: 0.7; cursor: not-allowed; }
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  button.loading .spinner { display: inline-block; }
+  button.loading .btn-text { display: none; }
+  #result {
+    margin-top: 1.2rem;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    display: none;
+    animation: floatIn 0.4s ease;
+  }
+  #result.success { display: block; background: rgba(44,182,125,0.15); border: 1px solid rgba(44,182,125,0.4); color: #7ee8b8; }
+  #result.error { display: block; background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.4); color: #ff9b9b; }
+  .footnote { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 1.5rem; opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <span class="emoji">👋</span>
+    <h1>Let's connect</h1>
+    <p class="sub">Drop your name and email — we'll get back to you.</p>
+
+    <form id="contactForm" novalidate>
+      <label for="name">Name</label>
+      <input type="text" id="name" placeholder="Ada Lovelace" autocomplete="name">
+
+      <label for="email">Email</label>
+      <input type="email" id="email" placeholder="ada@example.com" autocomplete="email">
+
+      <button type="submit" id="submitBtn">
+        <span class="spinner"></span>
+        <span class="btn-text">Send it 🚀</span>
+      </button>
+    </form>
+
+    <div id="result"></div>
+    <div class="footnote">Served from S3 · Powered by Lambda + API Gateway</div>
+  </div>
+
+<script>
+  // Replace at deploy time with the real API Gateway invoke URL, e.g.
+  // https://abc123.execute-api.ap-south-1.amazonaws.com/prod/contact
+  const API_URL = "__API_URL__";
+
+  const form = document.getElementById("contactForm");
+  const nameInput = document.getElementById("name");
+  const emailInput = document.getElementById("email");
+  const submitBtn = document.getElementById("submitBtn");
+  const result = document.getElementById("result");
+
+  function shake(el) {
+    el.classList.add("shake");
+    setTimeout(() => el.classList.remove("shake"), 400);
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    result.className = "";
+    result.textContent = "";
+
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+
+    if (!name) { shake(nameInput); nameInput.focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { shake(emailInput); emailInput.focus(); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add("loading");
+
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email }),
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        result.className = "success";
+        result.textContent = "✅ " + data.message;
+        form.reset();
+      } else {
+        result.className = "error";
+        result.textContent = "⚠️ " + (data.error || "Something went wrong.");
+      }
+    } catch (err) {
+      result.className = "error";
+      result.textContent = "⚠️ Couldn't reach the server. Please try again.";
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove("loading");
+    }
+  });
+</script>
+</body>
+</html>
