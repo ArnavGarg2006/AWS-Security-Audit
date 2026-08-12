@@ -1,66 +1,70 @@
-# AWS Security Audit
+<div align="center">
 
-A read-only Python/boto3 CLI that scans an AWS account for common security
-misconfigurations, loosely aligned with the CIS AWS Foundations Benchmark.
+# 🛡️ AWS Security Audit
 
-It never modifies any resource — every API call it makes is a `Describe*`,
-`Get*`, or `List*` call.
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&pause=1200&color=A78BFA&center=true&vCenter=true&width=560&lines=Read-only.+No+writes%2C+no+deletes%2C+no+surprises.;Scans+IAM%2C+S3%2C+EC2%2C+RDS%2C+CloudTrail%2C+Config%2C+GuardDuty.;CLI+today.+Lambda+web+app+too.)](https://github.com/ArnavGarg2006/AWS-Security-Audit)
+
+![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
+![boto3](https://img.shields.io/badge/boto3-AWS_SDK-FF9900?logo=amazonaws&logoColor=white)
+![CIS](https://img.shields.io/badge/aligned_with-CIS_AWS_Foundations-2CB67D)
+![Read Only](https://img.shields.io/badge/access-read--only-7F5AF0)
+
+A read-only Python/boto3 CLI (plus a serverless twin) that scans an AWS account for
+common security misconfigurations. Every API call it makes is a `Describe*`, `Get*`,
+or `List*` — it can't change anything if it tried.
+
+</div>
+
+<br>
+
+<div align="center">
+  <img src=".github/assets/audit-hops.svg" alt="Animated diagram: a pulse hopping through IAM, S3, EC2, RDS, CloudTrail, Config, and GuardDuty, landing on a findings report" width="100%">
+  <br>
+  <sub>One pass, one hop per service — the pulse restarts from IAM every time this page loads.</sub>
+</div>
+
+<br>
+
+## Severity, at a glance
+
+![CRITICAL](https://img.shields.io/badge/CRITICAL-ff4d4f?style=for-the-badge) internet-exposed or wide-open — fix now
+![HIGH](https://img.shields.io/badge/HIGH-ff7a45?style=for-the-badge) meaningful exposure — fix soon
+![MEDIUM](https://img.shields.io/badge/MEDIUM-ffd666?style=for-the-badge&labelColor=333) best-practice gap
+![LOW](https://img.shields.io/badge/LOW-69c0ff?style=for-the-badge&labelColor=333) minor hardening
 
 ## What it checks
 
 | Service | Checks |
 |---|---|
-| **IAM** | Root MFA / root access keys, account password policy, users with console access but no MFA, access keys older than 90 days, unused access keys, customer-managed policies granting `*:*` |
-| **S3** | Block Public Access settings, public bucket policy, public ACL grants, default encryption, versioning, access logging |
-| **EC2** | Security groups open to `0.0.0.0/0`/`::/0` (flags sensitive ports — SSH/RDP/DB — as CRITICAL), unencrypted EBS volumes, instances with public IPs, presence of a default VPC |
-| **RDS** | Publicly accessible instances, unencrypted storage, disabled automated backups, Multi-AZ, auto minor-version upgrades |
-| **CloudTrail / Config / GuardDuty** | Missing multi-region trail, trail not logging, log file validation, log encryption, Config recorder status, GuardDuty detector status |
+| **IAM** 🔑 | Root MFA / root access keys, account password policy, users with console access but no MFA, access keys older than 90 days, unused access keys, customer-managed policies granting `*:*` |
+| **S3** 🪣 | Block Public Access settings, public bucket policy, public ACL grants, default encryption, versioning, access logging |
+| **EC2** 🖥️ | Security groups open to `0.0.0.0/0`/`::/0` (flags sensitive ports — SSH/RDP/DB — as CRITICAL), unencrypted EBS volumes, instances with public IPs, presence of a default VPC |
+| **RDS** 🗄️ | Publicly accessible instances, unencrypted storage, disabled automated backups, Multi-AZ, auto minor-version upgrades |
+| **CloudTrail / Config / GuardDuty** 📜⚙️🛡️ | Missing multi-region trail, trail not logging, log file validation, log encryption, Config recorder status, GuardDuty detector status |
 
-Each finding includes a severity (CRITICAL/HIGH/MEDIUM/LOW), the affected
-resource, and a specific remediation step.
+Every finding carries a severity, the exact resource, and a specific remediation step —
+not just "this is bad," but what to run or click to fix it.
 
-## Setup
-
-Requires Python 3.9+.
+## Quickstart
 
 ```bash
 pip install -r requirements.txt
-```
 
-Configure AWS credentials the normal way — `aws configure`, environment
-variables, an SSO profile, or an instance/task role. This tool does not
-manage credentials itself.
+# aws configure  (or env vars / SSO / instance role — your call)
 
-### Required IAM permissions
-
-Attach the AWS-managed **`SecurityAudit`** or **`ReadOnlyAccess`** policy to
-the identity you run this with. Both are read-only and sufficient.
-
-## Usage
-
-```bash
-# Scan the default profile's default region
-python audit.py
-
-# Use a specific named profile
-python audit.py --profile prod
-
-# Scan specific regions
-python audit.py --region us-east-1 --region eu-west-1
-
-# Scan every enabled region
-python audit.py --all-regions
-
-# Only run certain services
-python audit.py --services iam,s3
-
-# Write JSON and/or HTML reports alongside the console output
 python audit.py --json-out report.json --html-out report.html
 ```
 
-Full options:
+Needs the AWS-managed **`SecurityAudit`** or **`ReadOnlyAccess`** policy attached to
+whatever identity you run it as. Exit code is `1` if anything CRITICAL/HIGH turned up
+(handy in CI), `0` if clean, `2` on a setup/auth problem.
+
+<details>
+<summary><strong>Full CLI reference</strong></summary>
 
 ```
+python audit.py [options]
+
 --profile PROFILE     AWS named profile to use
 --region REGION       Region to scan (repeatable)
 --all-regions         Scan all enabled EC2 regions
@@ -70,10 +74,37 @@ Full options:
 --no-console          Suppress the console table
 ```
 
-The process exits with code `1` if any CRITICAL or HIGH finding was
-reported (useful in CI), `0` if clean, and `2` on a setup/auth error.
+```bash
+python audit.py --profile prod --region us-east-1 --region eu-west-1
+python audit.py --all-regions
+python audit.py --services iam,s3
+```
 
-## Project layout
+</details>
+
+## Two ways to run it
+
+```mermaid
+flowchart LR
+    subgraph CLI["🖥️ CLI"]
+        A[python audit.py] --> B[boto3 session]
+    end
+    subgraph Lambda["☁️ Serverless"]
+        C[IAM-signed request] --> D[Function URL] --> E[Lambda]
+    end
+    B --> F[(AWS APIs<br/>Describe / Get / List)]
+    E --> F
+    F --> G{Findings}
+    G --> H[Console table]
+    G --> I[JSON / HTML report]
+```
+
+The [CLI](aws_security_audit/) is the tool itself. The
+[Lambda web app](lambda-s3-audit-webapp/) runs the same checks behind an
+IAM-authenticated Function URL — same logic, on-demand, no local Python needed.
+
+<details>
+<summary><strong>Project layout</strong></summary>
 
 ```
 aws_security_audit/
@@ -89,21 +120,27 @@ aws_security_audit/
 audit.py                   entry point: `python audit.py`
 ```
 
-Each `checks/*.py` module exposes `get_checks(session, region)` returning a
-list of `(check_id, description, region, callable)` tuples. The CLI runs
-each callable independently and catches exceptions per-check, so a missing
-permission on one check (e.g. no `guardduty:ListDetectors`) is reported as
-a skipped check rather than crashing the whole audit.
+Each `checks/*.py` module exposes `get_checks(session, region)` returning a list of
+`(check_id, description, region, callable)` tuples. The CLI runs each callable
+independently and catches exceptions per-check, so a missing permission on one check
+(e.g. no `guardduty:ListDetectors`) is reported as a skipped check rather than crashing
+the whole audit.
+
+</details>
 
 ## Extending
 
-To add a new check, add a function to the relevant `checks/*.py` module that
-returns a list of `Finding` objects, then register it in that module's
-`CHECKS` list (or `REGIONAL_CHECKS`/global helper for logging_monitoring.py).
+Add a function to the relevant `checks/*.py` module that returns a list of `Finding`
+objects, then register it in that module's `CHECKS` list (or `REGIONAL_CHECKS`/global
+helper for `logging_monitoring.py`).
 
-## Lambda web app
+## Also in this repo
 
-[lambda-s3-audit-webapp/](lambda-s3-audit-webapp/) is a serverless version of the same
-checks — a Lambda function behind an IAM-authenticated Function URL that runs the audit
-on demand and returns HTML or JSON. See its own [README](lambda-s3-audit-webapp/README.md)
-for deployment steps.
+- 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) — the same audit logic as a
+  Lambda function behind an IAM-authenticated Function URL
+- 📬 [**fullstack-contact-app/**](fullstack-contact-app/) — an unrelated demo: a
+  Lambda + API Gateway + S3 contact form, built while exploring the same account
+
+<div align="center">
+<sub>Built to answer "what's actually wrong with my AWS account" — not to guess.</sub>
+</div>
