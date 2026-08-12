@@ -107,3 +107,14 @@ returns a list of `Finding` objects, then register it in that module's
 checks — a Lambda function behind an IAM-authenticated Function URL that runs the audit
 on demand and returns HTML or JSON. See its own [README](lambda-s3-audit-webapp/README.md)
 for deployment steps.
+
+## Full-stack contact form (also in this repo)
+
+[fullstack-contact-app/](fullstack-contact-app/) is a separate demo built while exploring
+this same account: a public contact form (S3 + API Gateway + Lambda) that's grown into a
+small production-shaped stack — DynamoDB persistence, SNS/SES notifications, a WAF rate
+limit + CORS lockdown + IAM least-privilege throughout, CloudWatch alarms, X-Ray tracing,
+an AWS SAM template for reproducible deploys, and a GitHub Actions pipeline that deploys
+on push using its own scoped-down IAM user (not the admin credentials used interactively).
+See its [README](fullstack-contact-app/README.md) for the full architecture and the
+security/observability tradeoffs documented along the way.

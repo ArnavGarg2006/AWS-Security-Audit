@@ -10,6 +10,9 @@ lambda-s3-audit-webapp/s3_audit_report.html
 lambda-s3-audit-webapp/function.zip
 fullstack-contact-app/backend/function.zip
 
+# Node dependencies - restored via `npm ci` (package-lock.json is committed)
+fullstack-contact-app/backend/node_modules/
+
 # Generated deploy copy with the live API URL baked in - regenerate at deploy time
 fullstack-contact-app/frontend/index.deployed.html
 

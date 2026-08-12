@@ -1,0 +1,103 @@
+<svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="-apple-system, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="55%" stop-color="#302b63"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <filter id="glow2" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <path id="flowPath" d="M60,110 L255,80 L450,135 L645,85 L840,110" fill="none"/>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="240" rx="18" fill="url(#bg2)"/>
+
+  <path d="M60,110 L255,80 L450,135 L645,85 L840,110" fill="none" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5"/>
+
+  <!-- branch lines to SNS / SES (static, fire-and-forget) -->
+  <path d="M645,85 L760,40" fill="none" stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="2 4"/>
+  <path d="M645,85 L760,150" fill="none" stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="2 4"/>
+
+  <!-- node 0: Browser -->
+  <g>
+    <rect x="25" y="75" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="60" cy="110" r="34" fill="#7f5af0" opacity="0" filter="url(#glow2)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="6s" begin="0s" repeatCount="indefinite"/>
+    </circle>
+    <text x="60" y="122" font-size="28" text-anchor="middle">🌐</text>
+    <text x="60" y="168" font-size="11" fill="#a7a9be" text-anchor="middle">Browser</text>
+  </g>
+
+  <!-- node 1: WAF -->
+  <g>
+    <rect x="220" y="45" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="255" cy="80" r="34" fill="#7f5af0" opacity="0" filter="url(#glow2)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="6s" begin="1s" repeatCount="indefinite"/>
+    </circle>
+    <text x="255" y="92" font-size="28" text-anchor="middle">🧱</text>
+    <text x="255" y="133" font-size="11" fill="#a7a9be" text-anchor="middle">WAF</text>
+  </g>
+
+  <!-- node 2: API Gateway -->
+  <g>
+    <rect x="415" y="100" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="450" cy="135" r="34" fill="#7f5af0" opacity="0" filter="url(#glow2)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="6s" begin="2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="450" y="147" font-size="28" text-anchor="middle">🚪</text>
+    <text x="450" y="188" font-size="10" fill="#a7a9be" text-anchor="middle">API Gateway</text>
+  </g>
+
+  <!-- node 3: Lambda -->
+  <g>
+    <rect x="610" y="50" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="645" cy="85" r="34" fill="#7f5af0" opacity="0" filter="url(#glow2)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="6s" begin="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="645" y="97" font-size="28" text-anchor="middle">⚡</text>
+    <text x="645" y="138" font-size="11" fill="#a7a9be" text-anchor="middle">Lambda</text>
+  </g>
+
+  <!-- node 4: DynamoDB (destination) -->
+  <g>
+    <rect x="805" y="75" width="70" height="70" rx="14" fill="#161a22" stroke="#2cb67d" stroke-width="1.5"/>
+    <circle cx="840" cy="110" r="36" fill="#2cb67d" opacity="0" filter="url(#glow2)">
+      <animate attributeName="opacity" values="0;0.65;0" dur="6s" begin="4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="840" y="122" font-size="28" text-anchor="middle">🗄️</text>
+    <text x="840" y="163" font-size="10" fill="#7ee8b8" text-anchor="middle">DynamoDB</text>
+  </g>
+
+  <!-- SNS (async fan-out, gentle independent pulse) -->
+  <g>
+    <rect x="725" y="5" width="70" height="60" rx="12" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="760" cy="35" r="4" fill="#69c0ff">
+      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="760" y="42" font-size="22" text-anchor="middle">📢</text>
+  </g>
+  <text x="760" y="80" font-size="10" fill="#a7a9be" text-anchor="middle">SNS</text>
+
+  <!-- SES (async fan-out, gentle independent pulse) -->
+  <g>
+    <rect x="725" y="120" width="70" height="60" rx="12" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="760" cy="150" r="4" fill="#ffd666">
+      <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+    <text x="760" y="157" font-size="22" text-anchor="middle">📧</text>
+  </g>
+  <text x="760" y="195" font-size="10" fill="#a7a9be" text-anchor="middle">SES</text>
+
+  <!-- traveling pulse -->
+  <circle r="6" fill="#fffffe" filter="url(#glow2)">
+    <animateMotion dur="6s" repeatCount="indefinite" calcMode="linear">
+      <mpath xlink:href="#flowPath" href="#flowPath"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#7f5af0;#fffffe" dur="1s" repeatCount="indefinite"/>
+  </circle>
+</svg>

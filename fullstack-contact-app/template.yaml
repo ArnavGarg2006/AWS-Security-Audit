@@ -1,0 +1,242 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Full-stack contact form: static S3 frontend, API Gateway REST API, Lambda
+  handler, DynamoDB persistence, SNS notifications, SES confirmation email,
+  CloudWatch alarms, and a rate-limiting WAF WebACL.
+
+  This is a reproducibility snapshot of the hand-deployed stack documented in
+  README.md. Deploy it into a *fresh* environment with `sam deploy --guided`;
+  it is not wired up to import the already-existing hand-created resources.
+
+Parameters:
+  NotificationEmail:
+    Type: String
+    Description: Email address that receives new-submission notifications and CloudWatch alarms.
+  SesSenderEmail:
+    Type: String
+    Description: Verified SES identity used as the confirmation email's "From" address.
+  AllowedOrigin:
+    Type: String
+    Description: Exact frontend origin allowed by CORS (protocol + host, no trailing slash).
+    Default: "*"
+  ApiRateLimitPerIp:
+    Type: Number
+    Description: WAF rate-based rule limit — requests per 5-minute rolling window, per source IP.
+    Default: 300
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 15
+    MemorySize: 128
+    Tracing: Active
+
+Resources:
+  # ---------- API ----------
+  ContactFormApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      TracingEnabled: true
+      MethodSettings:
+        - ResourcePath: "/*"
+          HttpMethod: "*"
+          ThrottlingRateLimit: 10
+          ThrottlingBurstLimit: 20
+          MetricsEnabled: true
+      Cors:
+        AllowOrigin: !Sub "'${AllowedOrigin}'"
+        AllowHeaders: "'Content-Type'"
+        AllowMethods: "'OPTIONS,POST,GET'"
+
+  # ---------- Compute ----------
+  ContactFormFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      CodeUri: backend/
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: !Ref AllowedOrigin
+          SUBMISSIONS_TABLE: !Ref SubmissionsTable
+          NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
+          SES_SENDER_EMAIL: !Ref SesSenderEmail
+          SES_ENABLED: "true"
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubmissionsTable
+        - SNSPublishMessagePolicy:
+            TopicName: !GetAtt NotificationsTopic.TopicName
+        - Statement:
+            - Sid: SESSendFromVerifiedIdentity
+              Effect: Allow
+              Action: ["ses:SendEmail", "ses:SendRawEmail"]
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  ses:FromAddress: !Ref SesSenderEmail
+      Events:
+        ContactPost:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ContactFormApi
+            Path: /contact
+            Method: post
+        SubmissionsGet:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ContactFormApi
+            Path: /submissions
+            Method: get
+
+  # ---------- Data ----------
+  SubmissionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      SSESpecification:
+        SSEEnabled: true
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+
+  # ---------- Notifications ----------
+  NotificationsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: contact-form-notifications
+
+  NotificationsSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      TopicArn: !Ref NotificationsTopic
+      Protocol: email
+      Endpoint: !Ref NotificationEmail
+
+  SesEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref SesSenderEmail
+
+  # ---------- Alarms ----------
+  LambdaErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: contact-form-lambda-errors
+      AlarmDescription: Contact form Lambda error count
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ContactFormFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref NotificationsTopic
+
+  LambdaDurationAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: contact-form-lambda-duration
+      AlarmDescription: Contact form Lambda p99 duration high
+      Namespace: AWS/Lambda
+      MetricName: Duration
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref ContactFormFunction
+      ExtendedStatistic: p99
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref NotificationsTopic
+
+  # ---------- WAF ----------
+  ApiWebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: contact-form-waf
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: contact-form-waf
+      Rules:
+        - Name: RateLimitPerIP
+          Priority: 0
+          Statement:
+            RateBasedStatement:
+              Limit: !Ref ApiRateLimitPerIp
+              AggregateKeyType: IP
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: RateLimitPerIP
+
+  ApiWebAclAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${ContactFormApi}/stages/prod"
+      WebACLArn: !GetAtt ApiWebAcl.Arn
+
+  # ---------- Frontend hosting ----------
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadForWebsite
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+
+Outputs:
+  ApiUrl:
+    Description: POST endpoint for contact form submissions
+    Value: !Sub "https://${ContactFormApi}.execute-api.${AWS::Region}.amazonaws.com/prod/contact"
+  SubmissionsUrl:
+    Description: GET endpoint for recent submissions
+    Value: !Sub "https://${ContactFormApi}.execute-api.${AWS::Region}.amazonaws.com/prod/submissions"
+  FrontendWebsiteUrl:
+    Description: S3 static website endpoint (upload frontend/index.html here, with placeholders substituted)
+    Value: !GetAtt FrontendBucket.WebsiteURL
+  SubmissionsTableName:
+    Value: !Ref SubmissionsTable
+  NotificationsTopicArn:
+    Value: !Ref NotificationsTopic

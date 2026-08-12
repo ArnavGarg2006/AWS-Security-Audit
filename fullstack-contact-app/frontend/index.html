@@ -36,7 +36,7 @@
   }
   .card {
     width: 100%;
-    max-width: 420px;
+    max-width: 460px;
     background: var(--card);
     backdrop-filter: blur(16px);
     border: 1px solid rgba(255,255,255,0.1);
@@ -51,7 +51,32 @@
   }
   .emoji { font-size: 2.2rem; display: block; text-align: center; margin-bottom: 0.5rem; }
   h1 { font-size: 1.4rem; text-align: center; margin: 0 0 0.4rem; }
-  p.sub { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 1.8rem; }
+  p.sub { text-align: center; color: var(--muted); font-size: 0.9rem; margin: 0 0 1.5rem; }
+
+  .tabs {
+    display: flex;
+    gap: 0.4rem;
+    background: rgba(0,0,0,0.25);
+    border-radius: 12px;
+    padding: 0.3rem;
+    margin-bottom: 1.6rem;
+  }
+  .tab-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    padding: 0.5rem 0.6rem;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+  }
+  .tab-btn.active { background: linear-gradient(135deg, var(--accent), #5b3fc0); color: white; }
+  .tab-panel { display: none; animation: floatIn 0.35s ease; }
+  .tab-panel.active { display: block; }
+
   label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.35rem; }
   input {
     width: 100%;
@@ -111,6 +136,34 @@
   }
   #result.success { display: block; background: rgba(44,182,125,0.15); border: 1px solid rgba(44,182,125,0.4); color: #7ee8b8; }
   #result.error { display: block; background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.4); color: #ff9b9b; }
+
+  .sub-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+  .sub-item {
+    background: rgba(0,0,0,0.22);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    animation: floatIn 0.3s ease;
+  }
+  .sub-item .sub-name { font-weight: 600; font-size: 0.9rem; }
+  .sub-item .sub-email { color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
+  .sub-item .sub-time { color: var(--muted); font-size: 0.7rem; margin-top: 0.3rem; opacity: 0.8; }
+  .sub-empty, .sub-loading, .sub-error {
+    text-align: center; color: var(--muted); font-size: 0.85rem; padding: 1.5rem 0;
+  }
+  .sub-refresh {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--muted);
+    font-size: 0.75rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 8px;
+    width: auto;
+    margin: 0 auto 1rem;
+    display: block;
+  }
+  .sub-refresh:hover:not(:disabled) { color: var(--text); transform: none; box-shadow: none; }
+
   .footnote { text-align: center; color: var(--muted); font-size: 0.72rem; margin-top: 1.5rem; opacity: 0.7; }
 </style>
 </head>
@@ -120,28 +173,56 @@
     <h1>Let's connect</h1>
     <p class="sub">Drop your name and email — we'll get back to you.</p>
 
-    <form id="contactForm" novalidate>
-      <label for="name">Name</label>
-      <input type="text" id="name" placeholder="Ada Lovelace" autocomplete="name">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="contact">📬 Contact</button>
+      <button class="tab-btn" data-tab="recent">📋 Recent</button>
+    </div>
 
-      <label for="email">Email</label>
-      <input type="email" id="email" placeholder="ada@example.com" autocomplete="email">
+    <div class="tab-panel active" id="panel-contact">
+      <form id="contactForm" novalidate>
+        <label for="name">Name</label>
+        <input type="text" id="name" placeholder="Ada Lovelace" autocomplete="name">
 
-      <button type="submit" id="submitBtn">
-        <span class="spinner"></span>
-        <span class="btn-text">Send it 🚀</span>
-      </button>
-    </form>
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="ada@example.com" autocomplete="email">
 
-    <div id="result"></div>
-    <div class="footnote">Served from S3 · Powered by Lambda + API Gateway</div>
+        <button type="submit" id="submitBtn">
+          <span class="spinner"></span>
+          <span class="btn-text">Send it 🚀</span>
+        </button>
+      </form>
+      <div id="result"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-recent">
+      <button class="sub-refresh" id="refreshBtn">↻ Refresh</button>
+      <div id="submissionsList"></div>
+    </div>
+
+    <div class="footnote">Served from S3 · Powered by Lambda + API Gateway + DynamoDB</div>
   </div>
 
 <script>
-  // Replace at deploy time with the real API Gateway invoke URL, e.g.
-  // https://abc123.execute-api.ap-south-1.amazonaws.com/prod/contact
+  // Replaced at deploy time with the real API Gateway invoke URLs.
   const API_URL = "__API_URL__";
+  const SUBMISSIONS_URL = "__SUBMISSIONS_URL__";
 
+  // --- tabs ---
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  const panels = { contact: document.getElementById("panel-contact"), recent: document.getElementById("panel-recent") };
+  let submissionsLoaded = false;
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+      Object.values(panels).forEach((p) => p.classList.remove("active"));
+      panels[btn.dataset.tab].classList.add("active");
+      if (btn.dataset.tab === "recent" && !submissionsLoaded) loadSubmissions();
+    });
+  });
+
+  // --- contact form ---
   const form = document.getElementById("contactForm");
   const nameInput = document.getElementById("name");
   const emailInput = document.getElementById("email");
@@ -179,6 +260,7 @@
         result.className = "success";
         result.textContent = "✅ " + data.message;
         form.reset();
+        submissionsLoaded = false; // next visit to Recent tab refetches
       } else {
         result.className = "error";
         result.textContent = "⚠️ " + (data.error || "Something went wrong.");
@@ -191,6 +273,49 @@
       submitBtn.classList.remove("loading");
     }
   });
+
+  // --- recent submissions ---
+  const submissionsList = document.getElementById("submissionsList");
+  const refreshBtn = document.getElementById("refreshBtn");
+
+  function timeAgo(iso) {
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function loadSubmissions() {
+    submissionsList.innerHTML = '<div class="sub-loading">Loading…</div>';
+    try {
+      const res = await fetch(SUBMISSIONS_URL);
+      const data = await res.json();
+      const items = data.submissions || [];
+
+      if (!items.length) {
+        submissionsList.innerHTML = '<div class="sub-empty">No submissions yet — be the first!</div>';
+      } else {
+        submissionsList.innerHTML = '<ul class="sub-list">' + items.map((s) => `
+          <li class="sub-item">
+            <div class="sub-name">${escapeHtml(s.name)}</div>
+            <div class="sub-email">${escapeHtml(s.email)}</div>
+            <div class="sub-time">${timeAgo(s.createdAt)}</div>
+          </li>`).join("") + '</ul>';
+      }
+      submissionsLoaded = true;
+    } catch (err) {
+      submissionsList.innerHTML = '<div class="sub-error">⚠️ Couldn\'t load submissions.</div>';
+    }
+  }
+
+  refreshBtn.addEventListener("click", loadSubmissions);
 </script>
 </body>
 </html>
