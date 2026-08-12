@@ -28,6 +28,17 @@ const CORS_HEADERS = {
   "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
 };
 
+// Findings from webapp-vuln-scanner/scanner.py (VULN.2): this is a JSON API with no
+// browser-rendered HTML, so most of these are defense-in-depth rather than exploitable
+// today, but they're free to set and close the gap the scanner flagged.
+const SECURITY_HEADERS = {
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "no-referrer",
+  "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+  "Content-Security-Policy": "default-src 'none'",
+};
+
 function wrapClient(client) {
   // Only patch with the X-Ray SDK inside a real Lambda invocation, never under Jest.
   if (!process.env.AWS_LAMBDA_FUNCTION_NAME) return client;
@@ -71,7 +82,7 @@ function maskEmail(email) {
 function respond(statusCode, bodyObj) {
   return {
     statusCode,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS },
+    headers: { "Content-Type": "application/json", ...CORS_HEADERS, ...SECURITY_HEADERS },
     body: JSON.stringify(bodyObj),
   };
 }

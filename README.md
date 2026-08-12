@@ -144,6 +144,14 @@ helper for `logging_monitoring.py`).
   least-privilege throughout, CloudWatch alarms, X-Ray tracing, an AWS SAM template for
   reproducible deploys, and a GitHub Actions pipeline deploying with its own
   scoped-down IAM user (not the admin credentials used interactively)
+- 🔎 [**webapp-vuln-scanner/**](webapp-vuln-scanner/) — headers/CORS/injection/rate-limit
+  scanner, tested against `fullstack-contact-app` itself; chasing down its own false
+  negatives uncovered a real account-level Lambda concurrency quota issue
+- 🧬 [**s3-integrity-monitor/**](s3-integrity-monitor/) — S3 Event Notifications → Lambda →
+  DynamoDB → SNS, watching the CloudTrail log bucket for unauthorized modification or
+  deletion (the canonical "someone's covering their tracks" signal)
+- 🧱 [**sg-firewall-simulator/**](sg-firewall-simulator/) — evaluates simulated packets
+  against your account's real security group rules instead of an invented rule set
 
 <div align="center">
 <sub>Built to answer "what's actually wrong with my AWS account" — not to guess.</sub>
