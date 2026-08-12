@@ -138,8 +138,12 @@ helper for `logging_monitoring.py`).
 
 - 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) — the same audit logic as a
   Lambda function behind an IAM-authenticated Function URL
-- 📬 [**fullstack-contact-app/**](fullstack-contact-app/) — an unrelated demo: a
-  Lambda + API Gateway + S3 contact form, built while exploring the same account
+- 📬 [**fullstack-contact-app/**](fullstack-contact-app/) — a separate demo built while
+  exploring this same account, grown into a small production-shaped stack: DynamoDB
+  persistence, SNS/SES notifications, a WAF rate limit + CORS lockdown + IAM
+  least-privilege throughout, CloudWatch alarms, X-Ray tracing, an AWS SAM template for
+  reproducible deploys, and a GitHub Actions pipeline deploying with its own
+  scoped-down IAM user (not the admin credentials used interactively)
 
 <div align="center">
 <sub>Built to answer "what's actually wrong with my AWS account" — not to guess.</sub>

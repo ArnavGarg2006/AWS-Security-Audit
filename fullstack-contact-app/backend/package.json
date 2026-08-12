@@ -1,0 +1,20 @@
+{
+  "name": "contact-form-handler",
+  "version": "2.0.0",
+  "description": "Lambda handler for the contact form: validates input, persists to DynamoDB, notifies via SNS, best-effort SES confirmation",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.658.0",
+    "@aws-sdk/lib-dynamodb": "^3.658.0",
+    "@aws-sdk/client-sns": "^3.658.0",
+    "@aws-sdk/client-ses": "^3.658.0",
+    "aws-xray-sdk-core": "^3.9.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "aws-sdk-client-mock": "^4.0.1"
+  }
+}

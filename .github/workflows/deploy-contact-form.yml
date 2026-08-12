@@ -1,0 +1,64 @@
+name: Deploy contact form
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "fullstack-contact-app/**"
+      - ".github/workflows/deploy-contact-form.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fullstack-contact-app/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm ci
+      - run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install production dependencies and package the Lambda
+        working-directory: fullstack-contact-app/backend
+        run: |
+          npm ci --omit=dev
+          zip -r function.zip index.js package.json node_modules
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.CI_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.CI_AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Deploy Lambda code
+        working-directory: fullstack-contact-app/backend
+        run: |
+          aws lambda update-function-code \
+            --function-name "${{ vars.LAMBDA_FUNCTION_NAME }}" \
+            --zip-file fileb://function.zip
+
+      - name: Deploy frontend to S3
+        working-directory: fullstack-contact-app/frontend
+        run: |
+          sed -e "s|__API_URL__|${{ vars.API_URL }}|" \
+              -e "s|__SUBMISSIONS_URL__|${{ vars.SUBMISSIONS_URL }}|" \
+              index.html > index.deployed.html
+          aws s3 cp index.deployed.html "s3://${{ vars.FRONTEND_BUCKET }}/index.html" \
+            --content-type "text/html"
