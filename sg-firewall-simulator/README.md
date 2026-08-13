@@ -1,5 +1,13 @@
 # Security Group Firewall Simulator
 
+<div align="center">
+  <img src="assets/simulate-flow.svg" alt="Animated diagram: a simulated packet flowing through real security group rules to a DENY outcome, with an ALLOW outcome shown statically as the untaken path" width="100%">
+  <br>
+  <sub>This account's real result for SSH from the internet: DENY — shown live, not staged.</sub>
+</div>
+
+<br>
+
 Answers "would this specific packet actually get through?" against your account's **real**
 security groups — not an invented rule set. Read-only (`ec2:DescribeSecurityGroups`),
 same access pattern as `aws_security_audit`.

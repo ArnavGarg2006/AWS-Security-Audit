@@ -1,5 +1,13 @@
 # Web App Vulnerability Scanner
 
+<div align="center">
+  <img src="assets/scan-flow.svg" alt="Animated diagram: the scanner flowing through the frontend and API targets to a findings node, with a before/after stat showing 12 findings reduced to 7" width="100%">
+  <br>
+  <sub>12 → 7 — the remaining 7 trace to two account-level gates, not gaps in the code.</sub>
+</div>
+
+<br>
+
 A focused OWASP-flavored scanner for a small API-backed web app — security headers,
 HTTPS enforcement, CORS configuration, injection payload resilience, error disclosure,
 and rate-limit verification. Built to scan our own [fullstack-contact-app](../fullstack-contact-app/),

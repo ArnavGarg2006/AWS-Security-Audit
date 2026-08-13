@@ -1,5 +1,13 @@
 # S3 Integrity Monitor
 
+<div align="center">
+  <img src="assets/monitor-flow.svg" alt="Animated diagram: an S3 event flowing through Lambda to DynamoDB for an ETag comparison, landing on Recorded, with an independent SNS alert node pulsing for the modified/deleted case" width="100%">
+  <br>
+  <sub>Every event gets recorded silently — only a changed ETag or a deletion fires the alert.</sub>
+</div>
+
+<br>
+
 A file integrity monitor, built AWS-native rather than as a generic `watchdog`-on-a-laptop
 tool — because the interesting case (detecting tampering with your own audit trail) only
 matters if it's watching the actual bucket, continuously, without you having a process
