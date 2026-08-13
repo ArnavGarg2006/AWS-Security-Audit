@@ -136,14 +136,16 @@ helper for `logging_monitoring.py`).
 
 ## Also in this repo
 
-- 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) — the same audit logic as a
-  Lambda function behind an IAM-authenticated Function URL
-- 📬 [**fullstack-contact-app/**](fullstack-contact-app/) — a separate demo built while
-  exploring this same account, grown into a small production-shaped stack: DynamoDB
-  persistence, SNS/SES notifications, a WAF rate limit + CORS lockdown + IAM
-  least-privilege throughout, CloudWatch alarms, X-Ray tracing, an AWS SAM template for
-  reproducible deploys, and a GitHub Actions pipeline deploying with its own
-  scoped-down IAM user (not the admin credentials used interactively)
+Everything below runs against the same real AWS account this audit tool scans — no
+sandbox data, no invented findings.
+
+| Project | What it does | Verified outcome |
+|---|---|---|
+| 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) | Same audit logic behind an IAM-authenticated Lambda Function URL | Live, returns HTML/JSON on demand |
+| 📬 [**fullstack-contact-app/**](fullstack-contact-app/) | Contact form grown into a production-shaped stack: DynamoDB, SNS/SES, WAF, CloudWatch alarms, X-Ray, an AWS SAM template, and a GitHub Actions pipeline with its own scoped-down IAM user | Live end-to-end; first CI-driven deploy succeeded on the first real push |
+| 🔎 [**webapp-vuln-scanner/**](webapp-vuln-scanner/) | Headers/CORS/injection/rate-limit scanner, run against `fullstack-contact-app` | **12 → 7 findings** after fixes; chasing its own false negatives surfaced a real account-level Lambda concurrency quota (10, vs AWS's default 1000) |
+| 🧬 [**s3-integrity-monitor/**](s3-integrity-monitor/) | S3 Event Notifications → Lambda → DynamoDB → SNS, watching the CloudTrail log bucket for tampering | Verified live: create (silent) → overwrite (HIGH alert) → delete (CRITICAL alert) |
+| 🧱 [**sg-firewall-simulator/**](sg-firewall-simulator/) | Evaluates simulated packets against real security group rules, not an invented rule set | Verified both directions: current account shows 0 exposures; a throwaway open-SSH group was correctly flagged, then deleted |
 
 <div align="center">
 <sub>Built to answer "what's actually wrong with my AWS account" — not to guess.</sub>

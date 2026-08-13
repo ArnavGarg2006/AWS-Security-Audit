@@ -106,6 +106,15 @@ describe("handler: POST /contact", () => {
     const res = await handler({ ...baseEvent, body: JSON.stringify({ name: "", email: "" }) });
     expect(res.headers["Access-Control-Allow-Origin"]).toBe("https://example.com");
   });
+
+  test("includes security headers on every response", async () => {
+    const res = await handler({ ...baseEvent, body: JSON.stringify({ name: "", email: "" }) });
+    expect(res.headers["X-Content-Type-Options"]).toBe("nosniff");
+    expect(res.headers["X-Frame-Options"]).toBe("DENY");
+    expect(res.headers["Strict-Transport-Security"]).toMatch(/max-age=/);
+    expect(res.headers["Content-Security-Policy"]).toBeTruthy();
+    expect(res.headers["Referrer-Policy"]).toBeTruthy();
+  });
 });
 
 describe("handler: GET /submissions", () => {

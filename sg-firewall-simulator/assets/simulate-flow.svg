@@ -1,0 +1,64 @@
+<svg viewBox="0 0 900 240" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="-apple-system, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bg4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="55%" stop-color="#302b63"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <filter id="glow4" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="simPath" d="M90,120 L450,90 L810,140" fill="none"/>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="240" rx="18" fill="url(#bg4)"/>
+  <path d="M90,120 L450,90 L810,140" fill="none" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5"/>
+  <path d="M450,90 L450,195" fill="none" stroke="#2a2f3a" stroke-width="1.5" stroke-dasharray="2 4"/>
+
+  <!-- node 0: simulated packet -->
+  <g>
+    <rect x="55" y="85" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="90" cy="120" r="34" fill="#7f5af0" opacity="0" filter="url(#glow4)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="2.4s" begin="0s" repeatCount="indefinite"/>
+    </circle>
+    <text x="90" y="132" font-size="28" text-anchor="middle">📦</text>
+    <text x="90" y="178" font-size="10" fill="#a7a9be" text-anchor="middle">tcp/22 from</text>
+    <text x="90" y="192" font-size="10" fill="#a7a9be" text-anchor="middle">0.0.0.0/0</text>
+  </g>
+
+  <!-- node 1: security group -->
+  <g>
+    <rect x="415" y="55" width="70" height="70" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="450" cy="90" r="34" fill="#7f5af0" opacity="0" filter="url(#glow4)">
+      <animate attributeName="opacity" values="0;0.55;0" dur="2.4s" begin="1.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="450" y="102" font-size="28" text-anchor="middle">🧱</text>
+    <text x="450" y="148" font-size="10" fill="#a7a9be" text-anchor="middle">real SG rules</text>
+  </g>
+
+  <!-- node 2: DENY (this account's real result) -->
+  <g>
+    <rect x="771" y="105" width="78" height="70" rx="14" fill="#161a22" stroke="#ff4d4f" stroke-width="1.5"/>
+    <circle cx="810" cy="140" r="38" fill="#ff4d4f" opacity="0" filter="url(#glow4)">
+      <animate attributeName="opacity" values="0;0.65;0" dur="2.4s" begin="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="810" y="152" font-size="28" text-anchor="middle">🚫</text>
+    <text x="810" y="198" font-size="11" fill="#ff9b9b" text-anchor="middle">DENY</text>
+  </g>
+
+  <!-- ALLOW: shown statically as the untaken path -->
+  <g opacity="0.55">
+    <rect x="415" y="195" width="70" height="42" rx="10" fill="#161a22" stroke="#2cb67d" stroke-width="1"/>
+    <text x="450" y="222" font-size="18" text-anchor="middle">✅</text>
+  </g>
+  <text x="500" y="222" font-size="10" fill="#7ee8b8" text-anchor="start">ALLOW if a rule actually matched</text>
+
+  <!-- traveling pulse -->
+  <circle r="6" fill="#fffffe" filter="url(#glow4)">
+    <animateMotion dur="2.4s" repeatCount="indefinite" calcMode="linear">
+      <mpath xlink:href="#simPath" href="#simPath"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#7f5af0;#fffffe" dur="1s" repeatCount="indefinite"/>
+  </circle>
+</svg>

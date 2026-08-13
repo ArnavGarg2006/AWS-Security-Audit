@@ -42,8 +42,12 @@ Resources:
       MethodSettings:
         - ResourcePath: "/*"
           HttpMethod: "*"
-          ThrottlingRateLimit: 10
-          ThrottlingBurstLimit: 20
+          # Tuned below the account's Lambda concurrency quota (10, vs AWS's default of
+          # 1000 - see webapp-vuln-scanner/README.md) so this throttle's clean 429 has a
+          # chance to intercept a burst before Lambda's harder wall returns raw 500s.
+          # Raise this once that quota is increased (needs an AWS Support ticket).
+          ThrottlingRateLimit: 5
+          ThrottlingBurstLimit: 8
           MetricsEnabled: true
       Cors:
         AllowOrigin: !Sub "'${AllowedOrigin}'"

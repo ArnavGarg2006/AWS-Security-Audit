@@ -1,5 +1,6 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 
 # Generated scan output - contains live AWS account details
 report.json
@@ -9,6 +10,10 @@ lambda-s3-audit-webapp/s3_audit_report.html
 # Build artifact - rebuild with: zip function.zip lambda_function.py
 lambda-s3-audit-webapp/function.zip
 fullstack-contact-app/backend/function.zip
+s3-integrity-monitor/function.zip
+
+# Generated scan output - contains live findings, goes stale immediately
+webapp-vuln-scanner/scan-report.json
 
 # Node dependencies - restored via `npm ci` (package-lock.json is committed)
 fullstack-contact-app/backend/node_modules/
