@@ -64,6 +64,20 @@ Needs the AWS-managed **`SecurityAudit`** or **`ReadOnlyAccess`** policy attache
 whatever identity you run it as. Exit code is `1` if anything CRITICAL/HIGH turned up
 (handy in CI), `0` if clean, `2` on a setup/auth problem.
 
+Every run also prints a **0-100 security score and letter grade** (Mozilla Observatory /
+SSL Labs style) with the findings costing you the most points — a different audience's
+entry point than the full table. A generic check can't know a public S3 bucket is a
+deliberate static-website bucket vs. a real misconfiguration, so deliberate exceptions are
+supported without hiding the finding from the report:
+
+```bash
+python audit.py --accept-risk-file accepted-risks.json
+```
+
+```json
+[{"check_id": "S3.1", "resource": "my-bucket", "reason": "intentional - static website hosting"}]
+```
+
 <details>
 <summary><strong>Full CLI reference</strong></summary>
 
@@ -77,6 +91,8 @@ python audit.py [options]
 --json-out PATH       Write a full JSON report
 --html-out PATH       Write a self-contained HTML report
 --no-console          Suppress the console table
+--accept-risk-file PATH   JSON file of findings to exclude from the score (still
+                          shown in the full report — see above)
 ```
 
 ```bash
@@ -139,6 +155,25 @@ Add a function to the relevant `checks/*.py` module that returns a list of `Find
 objects, then register it in that module's `CHECKS` list (or `REGIONAL_CHECKS`/global
 helper for `logging_monitoring.py`).
 
+## Continuous verification
+
+A finding says "this is misconfigured" based on a config API response. That's not the
+same as proving the hole is actually exploitable — or, after a fix, that it's actually
+closed. [`verify_findings.py`](verify_findings.py) actively re-attempts the exploit path
+for the finding types where that's meaningful, instead of re-reading the same config:
+
+```bash
+python verify_findings.py report.json
+```
+
+- **S3 public-access findings** — makes real, unauthenticated HTTPS requests against the
+  bucket (both `ListBucket` and `GetObject` — a bucket can correctly deny one while still
+  serving the other, which the first version of this tool got wrong and reported as
+  falsely "closed" until fixed)
+- **EC2 open-security-group findings** — re-fetches the *current* live security group and
+  re-runs [`sg-firewall-simulator`](sg-firewall-simulator/)'s real CIDR-containment logic
+  against it, not a cached finding
+
 ## Also in this repo
 
 Everything below runs against the same real AWS account this audit tool scans — no
@@ -149,6 +184,10 @@ sandbox data, no invented findings.
 | 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) | Same audit logic behind an IAM-authenticated Lambda Function URL | Live, returns HTML/JSON on demand |
 | 📬 [**fullstack-contact-app/**](fullstack-contact-app/) | Contact form grown into a production-shaped stack: DynamoDB, SNS/SES, WAF, CloudWatch alarms, X-Ray, an AWS SAM template, and a GitHub Actions pipeline with its own scoped-down IAM user | Live end-to-end; first CI-driven deploy succeeded on the first real push |
 | 🔎 [**webapp-vuln-scanner/**](webapp-vuln-scanner/) | Headers/CORS/injection/rate-limit scanner, run against `fullstack-contact-app` | **12 → 7 findings** after fixes; chasing its own false negatives surfaced a real account-level Lambda concurrency quota (10, vs AWS's default 1000) |
+| 🕸️ [**attack-path-graph/**](attack-path-graph/) | Graphs IAM/S3/Lambda relationships to answer "what can actually be reached from here?" instead of a flat findings list | Correctly found no Internet→compromise path, but caught that a Lambda role's `ReadOnlyAccess` reaches every bucket including the CloudTrail logs — a real gap in its own first heuristic, fixed after live testing |
+| 🌊 [**iac-drift-detector/**](iac-drift-detector/) | Diffs `template.yaml`'s declared state against live resources — no CloudFormation stack exists to run native drift detection against, since these were hand-deployed | Verified both directions: clean on the real stack, then caught a deliberately-introduced real config change (Lambda memory 128→256MB), then reverted |
+| 💸 [**cost-of-insecurity/**](cost-of-insecurity/) | Reframes findings in dollars: bounded normal cost vs. unbounded exploited-cost liability | Caught and fixed a real bug in itself (wrong CloudWatch region + an oversized query window silently swallowed by a broad `except`) before reporting the real bucket size |
+| 🚦 [**shift-left-scanner/**](shift-left-scanner/) | Scans `template.yaml` for misconfigurations *before* deployment, wired into the GitHub Actions pipeline as a gate `deploy` now depends on | Verified against both the real (1 known finding) and a deliberately broken (6 findings, 5 blocking) template |
 | 🧬 [**s3-integrity-monitor/**](s3-integrity-monitor/) | S3 Event Notifications → Lambda → DynamoDB → SNS, watching the CloudTrail log bucket for tampering | Verified live: create (silent) → overwrite (HIGH alert) → delete (CRITICAL alert) |
 | 🧱 [**sg-firewall-simulator/**](sg-firewall-simulator/) | Evaluates simulated packets against real security group rules, not an invented rule set | Verified both directions: current account shows 0 exposures; a throwaway open-SSH group was correctly flagged, then deleted |
 

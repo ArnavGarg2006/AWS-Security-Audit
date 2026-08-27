@@ -1,0 +1,12 @@
+[
+  {
+    "check_id": "S3.1",
+    "resource": "contact-form-frontend-653011867129-ap-south-1",
+    "reason": "Intentionally public — S3 static website hosting bucket for the contact form frontend (CloudFront is blocked pending AWS account verification, documented in fullstack-contact-app/README.md). Public-read is the deliberate design, not a misconfiguration."
+  },
+  {
+    "check_id": "S3.2",
+    "resource": "contact-form-frontend-653011867129-ap-south-1",
+    "reason": "Same as S3.1 — the bucket policy is intentionally public-read for static website hosting."
+  }
+]
