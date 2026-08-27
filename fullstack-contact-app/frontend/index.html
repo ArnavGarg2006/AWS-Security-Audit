@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  X-Frame-Options, HSTS, and X-Content-Type-Options genuinely require real HTTP response
+  headers, which plain S3 static website hosting can't add without CloudFront (still
+  blocked pending AWS account verification — see README). CSP and Referrer-Policy are the
+  two the scanner flagged that CAN be set this way, so they're set here as a partial fix.
+  script-src needs 'unsafe-inline' because the form logic below is an inline <script> —
+  externalizing it to its own file would let this tighten further.
+-->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' __API_ORIGIN__; img-src 'self'; frame-ancestors 'none'">
+<meta name="referrer" content="no-referrer">
 <title>Get in Touch</title>
 <style>
   :root {
@@ -234,6 +244,32 @@
     setTimeout(() => el.classList.remove("shake"), 400);
   }
 
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+  // Retries on 5xx / network errors with short backoff. This account's Lambda
+  // concurrency quota is unusually low (10, vs AWS's normal default of 1000 —
+  // see webapp-vuln-scanner findings), so a burst of simultaneous submitters
+  // can get a transient 500 that a quick retry usually clears on its own.
+  async function postWithRetry(url, body, attempts = 3) {
+    let lastErr;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        if (res.status < 500) return res;
+        lastErr = res;
+      } catch (err) {
+        lastErr = err;
+      }
+      if (i < attempts - 1) await sleep(300 * 2 ** i);
+    }
+    if (lastErr instanceof Response) return lastErr;
+    throw lastErr;
+  }
+
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     result.className = "";
@@ -249,11 +285,7 @@
     submitBtn.classList.add("loading");
 
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email }),
-      });
+      const res = await postWithRetry(API_URL, { name, email });
       const data = await res.json();
 
       if (res.ok) {

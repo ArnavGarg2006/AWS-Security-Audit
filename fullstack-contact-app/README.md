@@ -46,15 +46,35 @@ the CloudFront-ready IaC definition to swap in once that clears.
 | Control | Detail |
 |---|---|
 | CORS | `Access-Control-Allow-Origin` is the exact S3 site origin, not `*` |
-| WAF | Regional Web ACL, rate-based rule: 300 requests / 5 min per source IP, blocks over the limit |
-| Throttling | API Gateway stage-level: 10 req/s steady, burst 20 — caps aggregate cost regardless of source |
+| WAF | Regional Web ACL, rate-based rule: 300 requests / 5 min per source IP, blocks over the limit; full request logging to `aws-waf-logs-contact-form` (CloudWatch Logs, 30-day retention) and a `BlockedRequests` alarm on the same SNS topic as the Lambda alarms |
+| Throttling | API Gateway stage-level: 5 req/s steady, burst 8 (lowered from 10/20 — see the concurrency note below) |
 | IAM | Lambda's role grants only `dynamodb:PutItem`/`Query` on the one table, `sns:Publish` on the one topic, and `ses:SendEmail` conditioned on the specific verified `FromAddress` — no wildcard actions |
 | CI credentials | GitHub Actions uses a **separate, scoped-down IAM user** (`contact-form-ci`: Lambda code deploy + S3 sync only) — never the admin credentials used for interactive development |
+| Security headers | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security`, `Content-Security-Policy` on every API response; CSP + Referrer-Policy also set via `<meta>` on the frontend (partial — see note below) |
+| Client resilience | Frontend retries 5xx responses with backoff (helps with the Lambda concurrency issue below) |
 
 **Not done, and why:** reCAPTCHA/hCaptcha would need a Google account to register a site
 key — that's yours to set up, not something I can provision. A custom domain (Route 53 +
 ACM) needs a domain name you own, which wasn't provided; `AllowedOrigin` and CORS are
 parameterized in `template.yaml` so it's a one-parameter change once you have one.
+
+### Found by webapp-vuln-scanner, and what's still open
+
+[../webapp-vuln-scanner/](../webapp-vuln-scanner/) was pointed at this app and found 12
+issues; fixing them closed 5. What's left, all tracing back to two account-level gates
+rather than anything fixable in code:
+
+- **HTTPS not enforced, and `X-Frame-Options`/HSTS/`X-Content-Type-Options` missing on the
+  frontend** — plain S3 static website hosting can't add real HTTP response headers
+  without CloudFront, which is still blocked on AWS account verification.
+- **Burst concurrent load returns raw 500s instead of clean 429s** — this account's Lambda
+  concurrent-execution quota is capped at **10** (AWS's normal default is 1000), confirmed
+  via `aws lambda get-account-settings`. A self-service Service Quotas increase request
+  was rejected (`"You must provide a quota value greater than the default quota value of
+  1000.0"`) — like CloudFront and SES, this needs an AWS Support ticket. The stage
+  throttle is now tuned to 5/8 (down from 10/20) to stay under that ceiling and let the
+  Gateway's clean 429 intercept floods before Lambda's harder wall does, and the frontend
+  retries 5xx with backoff — but the underlying quota is still what it is until AWS lifts it.
 
 ## Observability
 
@@ -63,8 +83,24 @@ parameterized in `template.yaml` so it's a one-parameter change once you have on
 - **X-Ray active tracing** on both the Lambda and the API Gateway stage — the AWS SDK v3
   clients (DynamoDB, SNS, SES) are wrapped with `aws-xray-sdk-core`, so a slow request
   shows you *which* downstream call was slow, not just that the Lambda was slow.
-- **CloudWatch alarms**: `contact-form-lambda-errors` (any error in a 5-minute window) and
-  `contact-form-lambda-duration` (p99 > 5s), both notifying the SNS topic.
+- **CloudWatch alarms**: `contact-form-lambda-errors` (any error in a 5-minute window),
+  `contact-form-lambda-duration` (p99 > 5s), and `contact-form-waf-blocked-requests` (any
+  block in a 5-minute window) — all three notify the same SNS topic.
+- **WAF request logging** to `aws-waf-logs-contact-form` (CloudWatch Logs) — every
+  evaluated request, not just blocked ones, including which rule fired and why. Verified
+  live: a test request shows up with the full rate-based rule evaluation attached.
+
+### Gap analysis via the AWS `waf` skill
+
+Loaded AWS's own maintained `waf` skill (installed via `aws configure agent-toolkit` —
+see the top-level README) and asked it what a from-scratch rate-based rule was missing
+compared to AWS's recommended setup. It flagged, correctly: no logging configured (fixed
+above), no AWS Managed Rule Groups (skipped deliberately for cost — a managed rule group
+adds ~$1-2/month), no Bot Control, and — the most useful catch — that a blunt per-IP rate
+limit is the *wrong primary tool* for form-spam abuse; AWS's Fraud Control (ACFP) is
+built for exactly that pattern and rate limiting only catches the volumetric case. Not
+implemented (Fraud Control needs its own setup and cost tradeoff), but worth knowing the
+current rate limit isn't the complete story if spam becomes a real problem.
 
 ## Endpoints
 

@@ -59,6 +59,7 @@ jobs:
         run: |
           sed -e "s|__API_URL__|${{ vars.API_URL }}|" \
               -e "s|__SUBMISSIONS_URL__|${{ vars.SUBMISSIONS_URL }}|" \
+              -e "s|__API_ORIGIN__|${{ vars.API_ORIGIN }}|" \
               index.html > index.deployed.html
           aws s3 cp index.deployed.html "s3://${{ vars.FRONTEND_BUCKET }}/index.html" \
             --content-type "text/html"
