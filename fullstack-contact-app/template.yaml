@@ -201,6 +201,44 @@ Resources:
       ResourceArn: !Sub "arn:aws:apigateway:${AWS::Region}::/restapis/${ContactFormApi}/stages/prod"
       WebACLArn: !GetAtt ApiWebAcl.Arn
 
+  # Name MUST start with "aws-waf-logs-" - AWS WAF requires this exact prefix
+  # for a CloudWatch Logs destination.
+  WafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: aws-waf-logs-contact-form
+      RetentionInDays: 30
+
+  ApiWebAclLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      ResourceArn: !GetAtt ApiWebAcl.Arn
+      LogDestinationConfigs:
+        - !GetAtt WafLogGroup.Arn
+
+  WafBlockedRequestsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: contact-form-waf-blocked-requests
+      AlarmDescription: Contact form WAF blocked request count
+      Namespace: AWS/WAFV2
+      MetricName: BlockedRequests
+      Dimensions:
+        - Name: WebACL
+          Value: contact-form-waf
+        - Name: Rule
+          Value: ALL
+        - Name: Region
+          Value: !Ref AWS::Region
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref NotificationsTopic
+
   # ---------- Frontend hosting ----------
   FrontendBucket:
     Type: AWS::S3::Bucket

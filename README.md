@@ -47,10 +47,15 @@ not just "this is bad," but what to run or click to fix it.
 
 ## Quickstart
 
+Requires the [AWS CLI](https://aws.amazon.com/cli/) (v2) for `aws configure` and any
+manual deployment steps in this repo — `boto3` (bundled by `requirements.txt`) handles
+the actual API calls the audit makes, but the CLI is how you set up the credentials it
+reads.
+
 ```bash
 pip install -r requirements.txt
 
-# aws configure  (or env vars / SSO / instance role — your call)
+aws configure   # or env vars / SSO / instance role — your call
 
 python audit.py --json-out report.json --html-out report.html
 ```
