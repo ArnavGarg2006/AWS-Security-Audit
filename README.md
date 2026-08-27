@@ -2,7 +2,7 @@
 
 # 🛡️ AWS Security Audit
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&pause=1200&color=A78BFA&center=true&vCenter=true&width=560&lines=Read-only.+No+writes%2C+no+deletes%2C+no+surprises.;Scans+IAM%2C+S3%2C+EC2%2C+RDS%2C+CloudTrail%2C+Config%2C+GuardDuty.;CLI+today.+Lambda+web+app+too.)](https://github.com/ArnavGarg2006/AWS-Security-Audit)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&pause=1200&color=A78BFA&center=true&vCenter=true&width=600&lines=Read-only.+No+writes%2C+no+deletes%2C+no+surprises.;Scans+IAM%2C+S3%2C+EC2%2C+RDS%2C+CloudTrail%2C+Config%2C+GuardDuty.;Scores+it%2C+verifies+it%2C+maps+what's+reachable.;9+satellite+tools.+CLI+today%2C+Lambda+web+app+too.)](https://github.com/ArnavGarg2006/AWS-Security-Audit)
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
 ![boto3](https://img.shields.io/badge/boto3-AWS_SDK-FF9900?logo=amazonaws&logoColor=white)
@@ -77,6 +77,10 @@ python audit.py --accept-risk-file accepted-risks.json
 ```json
 [{"check_id": "S3.1", "resource": "my-bucket", "reason": "intentional - static website hosting"}]
 ```
+
+<div align="center">
+  <img src=".github/assets/score-gauge.svg" alt="Animated gauge sweeping from a 64/D score up to a 94/A score as accepted-risks.json is applied, needle and readout in sync" width="85%">
+</div>
 
 <details>
 <summary><strong>Full CLI reference</strong></summary>
@@ -174,10 +178,31 @@ python verify_findings.py report.json
   re-runs [`sg-firewall-simulator`](sg-firewall-simulator/)'s real CIDR-containment logic
   against it, not a cached finding
 
+## Reasoning about reachability, not just listing findings
+
+A flat findings list can't tell you that two separate LOW/MEDIUM items compound into
+something worse. [`attack-path-graph/`](attack-path-graph/) builds an actual graph of
+IAM trust, resource policies, and network exposure, and asks "what can be *reached*
+from the internet" — separately from "what's misconfigured but unreachable."
+
+<div align="center">
+  <img src=".github/assets/attack-path-pulse.svg" alt="Animated diagram: a pulse from Internet hitting a blocked Function URL and a reachable public bucket on the left, next to standalone IAM findings — an admin user and a role that reaches every bucket — on the right, with no line connecting the two halves" width="100%">
+</div>
+
+Run against this account, it correctly finds **no automated path** from the internet to
+full compromise — but separately flags that `Arnav@2006` has `AdministratorAccess`
+attached directly, and that `s3-audit-lambda-role`'s `ReadOnlyAccess` reaches every
+bucket in the account. Neither of those needed a network path to matter; the graph
+reports them as their own class of finding instead of burying them in a checklist.
+
 ## Also in this repo
 
 Everything below runs against the same real AWS account this audit tool scans — no
 sandbox data, no invented findings.
+
+<div align="center">
+  <img src=".github/assets/ecosystem-orbit.svg" alt="Animated diagram: a radar sweep rotating around a central Audit Core node, lighting up nine orbiting satellite tools in sequence — Lambda web app, contact form, vuln scanner, attack path graph, drift detector, cost estimator, shift-left scanner, integrity monitor, and firewall simulator" width="100%">
+</div>
 
 | Project | What it does | Verified outcome |
 |---|---|---|

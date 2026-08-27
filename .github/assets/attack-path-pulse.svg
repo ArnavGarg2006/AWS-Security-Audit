@@ -1,0 +1,109 @@
+<svg viewBox="0 0 900 300" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="-apple-system, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="apBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="55%" stop-color="#302b63"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <filter id="apGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="pathToFunc" d="M112,150 L268,80" fill="none"/>
+    <path id="pathToBucket" d="M112,150 L268,220" fill="none"/>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="300" rx="18" fill="url(#apBg)"/>
+  <line x1="455" y1="46" x2="455" y2="264" stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="3 6"/>
+
+  <text x="225" y="34" font-size="13" fill="#a7a9be" text-anchor="middle">🌐 Network reachability</text>
+  <text x="678" y="34" font-size="13" fill="#a7a9be" text-anchor="middle">🚩 Standalone findings</text>
+
+  <!-- ===== left: internet reachability ===== -->
+  <path d="M112,150 L268,80" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+  <path d="M112,150 L268,220" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+
+  <g>
+    <rect x="48" y="118" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <text x="80" y="158" font-size="26" text-anchor="middle">🌐</text>
+    <text x="80" y="198" font-size="12" fill="#a7a9be" text-anchor="middle">Internet</text>
+  </g>
+
+  <g>
+    <rect x="238" y="48" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="270" cy="80" r="34" fill="#ff4d4f" opacity="0" filter="url(#apGlow)">
+      <animate attributeName="opacity" values="0;0;0.5;0" keyTimes="0;0.7;0.85;1" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+    <text x="270" y="90" font-size="26" text-anchor="middle">⚡</text>
+    <text x="270" y="128" font-size="11" fill="#a7a9be" text-anchor="middle">Function URL</text>
+    <text x="270" y="142" font-size="11" fill="#ff7a75" text-anchor="middle">✕ AuthType: AWS_IAM</text>
+  </g>
+
+  <g>
+    <rect x="238" y="188" width="64" height="64" rx="14" fill="#161a22" stroke="#2cb67d" stroke-width="1.5"/>
+    <circle cx="270" cy="220" r="34" fill="#2cb67d" opacity="0" filter="url(#apGlow)">
+      <animate attributeName="opacity" values="0;0.6;0" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="270" y="230" font-size="26" text-anchor="middle">🪣</text>
+    <text x="270" y="268" font-size="11" fill="#a7a9be" text-anchor="middle">Static site bucket</text>
+    <text x="270" y="282" font-size="11" fill="#7ee8b8" text-anchor="middle">✓ intentionally public</text>
+  </g>
+
+  <circle r="6" fill="#fffffe" filter="url(#apGlow)">
+    <animateMotion dur="2.5s" repeatCount="indefinite">
+      <mpath xlink:href="#pathToFunc" href="#pathToFunc"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#fffffe;#ff4d4f" keyTimes="0;0.75;1" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <circle r="6" fill="#fffffe" filter="url(#apGlow)">
+    <animateMotion dur="2.5s" begin="0.4s" repeatCount="indefinite">
+      <mpath xlink:href="#pathToBucket" href="#pathToBucket"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#fffffe;#2cb67d" keyTimes="0;0.75;1" dur="2.5s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <text x="225" y="255" font-size="11" fill="#6f6d8c" text-anchor="middle">no automated path reaches FULL ACCOUNT COMPROMISE</text>
+
+  <!-- ===== right: standalone findings ===== -->
+  <g stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="3 6" fill="none">
+    <path d="M700,220 L788,150"/>
+    <path d="M700,220 L800,195"/>
+    <path d="M700,220 L800,245"/>
+    <path d="M700,220 L788,290"/>
+  </g>
+
+  <g>
+    <circle cx="640" cy="90" r="36" fill="#ffd666" opacity="0.16">
+      <animate attributeName="opacity" values="0.1;0.35;0.1" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="608" y="58" width="64" height="64" rx="14" fill="#161a22" stroke="#ffd666" stroke-width="1.5"/>
+    <text x="640" y="98" font-size="26" text-anchor="middle">👑</text>
+    <text x="640" y="138" font-size="11" fill="#a7a9be" text-anchor="middle">Arnav@2006</text>
+    <text x="640" y="152" font-size="10" fill="#ffe08a" text-anchor="middle">AdministratorAccess — direct</text>
+  </g>
+
+  <g>
+    <rect x="668" y="188" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <text x="700" y="226" font-size="24" text-anchor="middle">🔑</text>
+    <text x="700" y="266" font-size="10" fill="#a7a9be" text-anchor="middle">lambda-role</text>
+    <text x="700" y="280" font-size="10" fill="#c8b6ff" text-anchor="middle">ReadOnlyAccess</text>
+  </g>
+
+  <g font-size="16" text-anchor="middle">
+    <text x="800" y="155">
+      🪣<animate attributeName="opacity" values="0.25;1;0.25" begin="0s" dur="2.4s" repeatCount="indefinite"/>
+    </text>
+    <text x="812" y="200">
+      🪣<animate attributeName="opacity" values="0.25;1;0.25" begin="0.4s" dur="2.4s" repeatCount="indefinite"/>
+    </text>
+    <text x="812" y="250">
+      🪣<animate attributeName="opacity" values="0.25;1;0.25" begin="0.8s" dur="2.4s" repeatCount="indefinite"/>
+    </text>
+    <text x="800" y="295">
+      🪣<animate attributeName="opacity" values="0.25;1;0.25" begin="1.2s" dur="2.4s" repeatCount="indefinite"/>
+    </text>
+  </g>
+
+  <text x="678" y="20" font-size="10" fill="#6f6d8c" text-anchor="middle"> </text>
+</svg>
