@@ -1,4 +1,5 @@
 import argparse
+import json
 import sys
 
 import boto3
@@ -42,7 +43,20 @@ def parse_args(argv=None):
     parser.add_argument("--json-out", help="Write full JSON report to this path")
     parser.add_argument("--html-out", help="Write HTML report to this path")
     parser.add_argument("--no-console", action="store_true", help="Suppress the console table report")
+    parser.add_argument("--accept-risk-file",
+                         help="JSON file of [{\"check_id\":..,\"resource\":..,\"reason\":..}] findings "
+                              "to exclude from the security score (still shown in the full report) — "
+                              "for deliberate configurations a generic check can't distinguish from a "
+                              "real misconfiguration, e.g. an intentionally public static-website bucket.")
     return parser.parse_args(argv)
+
+
+def load_accepted_risks(path):
+    if not path:
+        return set()
+    with open(path, encoding="utf-8") as f:
+        entries = json.load(f)
+    return {(e["check_id"], e["resource"]) for e in entries}
 
 
 def resolve_regions(session, args):
@@ -125,13 +139,19 @@ def main(argv=None):
                 continue
             run_check_set(module.get_checks(session, region), result)
 
+    try:
+        accepted_risks = load_accepted_risks(args.accept_risk_file)
+    except (OSError, json.JSONDecodeError, KeyError) as e:
+        print(f"Error reading --accept-risk-file: {e}", file=sys.stderr)
+        return 2
+
     if not args.no_console:
-        print_console_report(result)
+        print_console_report(result, accepted_risks=accepted_risks)
     if args.json_out:
-        write_json_report(result, args.json_out)
+        write_json_report(result, args.json_out, accepted_risks=accepted_risks)
         print(f"\nJSON report written to {args.json_out}")
     if args.html_out:
-        write_html_report(result, args.html_out)
+        write_html_report(result, args.html_out, accepted_risks=accepted_risks)
         print(f"HTML report written to {args.html_out}")
 
     has_critical_or_high = any(f.severity.value in ("CRITICAL", "HIGH") for f in result.findings)

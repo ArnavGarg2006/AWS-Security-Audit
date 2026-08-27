@@ -5,6 +5,7 @@ on:
     branches: [master]
     paths:
       - "fullstack-contact-app/**"
+      - "shift-left-scanner/**"
       - ".github/workflows/deploy-contact-form.yml"
   workflow_dispatch: {}
 
@@ -12,6 +13,17 @@ permissions:
   contents: read
 
 jobs:
+  shift-left-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r shift-left-scanner/requirements.txt
+      - name: Scan template.yaml before deploying anything
+        run: python shift-left-scanner/scan_template.py fullstack-contact-app/template.yaml
+
   test:
     runs-on: ubuntu-latest
     defaults:
@@ -26,7 +38,7 @@ jobs:
       - run: npm test
 
   deploy:
-    needs: test
+    needs: [shift-left-scan, test]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
