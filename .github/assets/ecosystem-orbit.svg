@@ -1,0 +1,138 @@
+<svg viewBox="0 0 760 470" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="-apple-system, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="ecoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="55%" stop-color="#302b63"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <radialGradient id="hubGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#7f5af0" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#7f5af0" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7f5af0" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#9d8cff" stop-opacity="0.35"/>
+    </linearGradient>
+    <filter id="ecoGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="760" height="470" rx="18" fill="url(#ecoBg)"/>
+  <text x="380" y="34" font-size="14" fill="#a7a9be" text-anchor="middle">One audit engine. Nine satellite tools, all pointed at the same real AWS account.</text>
+
+  <!-- rotating radar sweep -->
+  <g transform="translate(380,240)">
+    <polygon points="0,0 190,-30 190,30" fill="url(#sweepGrad)">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="9s" repeatCount="indefinite"/>
+    </polygon>
+  </g>
+
+  <!-- spokes -->
+  <g stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="3 6" fill="none">
+    <line x1="380" y1="240" x2="380" y2="97"/>
+    <line x1="380" y1="240" x2="486" y2="136"/>
+    <line x1="380" y1="240" x2="542" y2="233"/>
+    <line x1="380" y1="240" x2="523" y2="345"/>
+    <line x1="380" y1="240" x2="436" y2="417"/>
+    <line x1="380" y1="240" x2="324" y2="417"/>
+    <line x1="380" y1="240" x2="237" y2="345"/>
+    <line x1="380" y1="240" x2="218" y2="233"/>
+    <line x1="380" y1="240" x2="274" y2="136"/>
+  </g>
+
+  <!-- hub -->
+  <circle cx="380" cy="240" r="70" fill="url(#hubGlow)">
+    <animate attributeName="r" values="60;74;60" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="380" cy="240" r="46" fill="#161a22" stroke="#7f5af0" stroke-width="2"/>
+  <text x="380" y="234" font-size="26" text-anchor="middle">🛡️</text>
+  <text x="380" y="258" font-size="12" fill="#e0def4" text-anchor="middle">Audit Core</text>
+
+  <!-- satellites: label, emoji, x, y, begin -->
+  <g font-size="12" fill="#a7a9be" text-anchor="middle">
+
+    <g>
+      <rect x="348" y="65" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="380" cy="97" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="0s" repeatCount="indefinite"/>
+      </circle>
+      <text x="380" y="108" font-size="26" text-anchor="middle">☁️</text>
+      <text x="380" y="147">Lambda web app</text>
+    </g>
+
+    <g>
+      <rect x="454" y="104" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="486" cy="136" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="1s" repeatCount="indefinite"/>
+      </circle>
+      <text x="486" y="147" font-size="26" text-anchor="middle">📬</text>
+      <text x="486" y="186">Contact form</text>
+    </g>
+
+    <g>
+      <rect x="510" y="201" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="542" cy="233" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="2s" repeatCount="indefinite"/>
+      </circle>
+      <text x="542" y="244" font-size="26" text-anchor="middle">🔎</text>
+      <text x="542" y="283">Vuln scanner</text>
+    </g>
+
+    <g>
+      <rect x="491" y="313" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="523" cy="345" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="3s" repeatCount="indefinite"/>
+      </circle>
+      <text x="523" y="356" font-size="26" text-anchor="middle">🕸️</text>
+      <text x="523" y="395">Attack path</text>
+    </g>
+
+    <g>
+      <rect x="404" y="385" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="436" cy="417" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="4s" repeatCount="indefinite"/>
+      </circle>
+      <text x="436" y="428" font-size="26" text-anchor="middle">🌊</text>
+      <text x="436" y="450" font-size="11">Drift detector</text>
+    </g>
+
+    <g>
+      <rect x="292" y="385" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="324" cy="417" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="5s" repeatCount="indefinite"/>
+      </circle>
+      <text x="324" y="428" font-size="26" text-anchor="middle">💸</text>
+      <text x="324" y="450" font-size="11">Cost estimator</text>
+    </g>
+
+    <g>
+      <rect x="205" y="313" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="237" cy="345" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="6s" repeatCount="indefinite"/>
+      </circle>
+      <text x="237" y="356" font-size="26" text-anchor="middle">🚦</text>
+      <text x="237" y="395">Shift-left scan</text>
+    </g>
+
+    <g>
+      <rect x="186" y="201" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="218" cy="233" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="7s" repeatCount="indefinite"/>
+      </circle>
+      <text x="218" y="244" font-size="26" text-anchor="middle">🧬</text>
+      <text x="218" y="283">Integrity monitor</text>
+    </g>
+
+    <g>
+      <rect x="242" y="104" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="274" cy="136" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="8s" repeatCount="indefinite"/>
+      </circle>
+      <text x="274" y="147" font-size="26" text-anchor="middle">🧱</text>
+      <text x="274" y="186">Firewall sim</text>
+    </g>
+
+  </g>
+</svg>
