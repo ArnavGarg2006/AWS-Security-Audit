@@ -11,12 +11,22 @@ Supported check types:
   EC2.1 / EC2.2       — re-evaluates the CURRENT live security group rules
                         using sg-firewall-simulator's real CIDR-containment
                         logic (not a re-read of the same cached finding)
+  RDS.1               — a real TCP connection attempt to the DB endpoint's
+                        current live port, from wherever this runs — proves
+                        actual network reachability, not just the
+                        PubliclyAccessible API flag (a security group can
+                        still block everything even with that flag set)
+  IAM.4               — re-lists the user's MFA devices RIGHT NOW via
+                        list_mfa_devices, instead of trusting the
+                        credential report snapshot (which AWS refreshes on
+                        its own schedule, not on request)
 
 Usage:
     python audit.py --json-out report.json     # first generate a report
     python verify_findings.py report.json
 """
 import json
+import socket
 import sys
 from pathlib import Path
 
@@ -28,6 +38,8 @@ from simulate import evaluate, fetch_security_groups  # noqa: E402
 
 VERIFIABLE_S3 = {"S3.1", "S3.2", "S3.3"}
 VERIFIABLE_EC2 = {"EC2.1", "EC2.2"}
+VERIFIABLE_RDS = {"RDS.1"}
+VERIFIABLE_IAM = {"IAM.4"}
 
 
 def verify_s3_public_access(bucket, session):
@@ -106,6 +118,57 @@ def verify_ec2_security_group(session, region, sg_id_and_name):
     return False, "Currently allows nothing sensitive from 0.0.0.0/0 — re-verified clean."
 
 
+def verify_rds_public_access(session, region, db_id):
+    """Real TCP connection attempt against the instance's CURRENT live
+    endpoint/port, from wherever this runs. `PubliclyAccessible=true` only
+    means the instance HAS a public DNS name that resolves to a public IP —
+    a security group with no 0.0.0.0/0 ingress rule can still block every
+    real connection attempt, which the config flag alone can't tell you."""
+    rds = session.client("rds", region_name=region)
+    try:
+        instances = rds.describe_db_instances(DBInstanceIdentifier=db_id)["DBInstances"]
+    except rds.exceptions.DBInstanceNotFoundFault:
+        return None, f"RDS instance '{db_id}' no longer exists (deleted since the finding was recorded)."
+    db = instances[0]
+
+    if not db.get("PubliclyAccessible", False):
+        return False, f"'{db_id}' is no longer PubliclyAccessible — re-verified clean."
+
+    endpoint = db.get("Endpoint", {})
+    host, port = endpoint.get("Address"), endpoint.get("Port")
+    if not host:
+        return None, f"'{db_id}' has no endpoint yet (instance still starting up?)."
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(6)
+    try:
+        sock.connect((host, port))
+        return True, f"Real TCP connection to {host}:{port} SUCCEEDED — reachable from the internet."
+    except (socket.timeout, ConnectionRefusedError, OSError) as e:
+        return False, (f"PubliclyAccessible=true, but a real TCP connection to {host}:{port} "
+                        f"failed ({e}) — security group is blocking it despite the flag.")
+    finally:
+        sock.close()
+
+
+def verify_iam_user_mfa(session, username):
+    """Re-lists the user's MFA devices right now via list_mfa_devices,
+    instead of trusting the credential report's mfa_active column — AWS
+    regenerates that report on its own internal cadence (up to ~4 hours
+    stale), so a device added minutes ago can still show as "no MFA" in a
+    report generated just before."""
+    iam = session.client("iam")
+    try:
+        devices = iam.list_mfa_devices(UserName=username)["MFADevices"]
+    except iam.exceptions.NoSuchEntityException:
+        return None, f"IAM user '{username}' no longer exists (deleted since the finding was recorded)."
+
+    if devices:
+        names = ", ".join(d["SerialNumber"] for d in devices)
+        return False, f"'{username}' now has {len(devices)} MFA device(s) registered: {names}"
+    return True, f"'{username}' has zero MFA devices registered right now — finding confirmed current."
+
+
 def main():
     if len(sys.argv) < 2:
         print("Usage: python verify_findings.py report.json")
@@ -124,14 +187,19 @@ def main():
             still_exposed, evidence = verify_s3_public_access(bucket, session)
         elif check_id in VERIFIABLE_EC2:
             still_exposed, evidence = verify_ec2_security_group(session, finding["region"], finding["resource"])
+        elif check_id in VERIFIABLE_RDS:
+            still_exposed, evidence = verify_rds_public_access(session, finding["region"], finding["resource"])
+        elif check_id in VERIFIABLE_IAM:
+            still_exposed, evidence = verify_iam_user_mfa(session, finding["resource"])
         else:
             continue
 
         results.append((finding, still_exposed, evidence))
 
+    all_supported = VERIFIABLE_S3 | VERIFIABLE_EC2 | VERIFIABLE_RDS | VERIFIABLE_IAM
     if not results:
         print("No findings in this report have a supported active-verification method "
-              f"({', '.join(sorted(VERIFIABLE_S3 | VERIFIABLE_EC2))}).")
+              f"({', '.join(sorted(all_supported))}).")
         return
 
     print(f"Actively re-testing {len(results)} finding(s) against live infrastructure...\n")

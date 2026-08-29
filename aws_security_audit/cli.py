@@ -1,6 +1,7 @@
 import argparse
 import json
 import sys
+from datetime import date
 
 import boto3
 from botocore.exceptions import (
@@ -11,8 +12,11 @@ from botocore.exceptions import (
 )
 
 from .checks import ec2, iam, logging_monitoring, rds, s3
+from .history import append_history, trend_line
 from .models import AuditResult, CheckError
+from .remediate import write_fix_script
 from .report import print_console_report, write_html_report, write_json_report
+from .scoring import compute_score
 
 GLOBAL_MODULES = [iam, s3]
 REGIONAL_MODULES = [ec2, rds, logging_monitoring]
@@ -44,19 +48,48 @@ def parse_args(argv=None):
     parser.add_argument("--html-out", help="Write HTML report to this path")
     parser.add_argument("--no-console", action="store_true", help="Suppress the console table report")
     parser.add_argument("--accept-risk-file",
-                         help="JSON file of [{\"check_id\":..,\"resource\":..,\"reason\":..}] findings "
-                              "to exclude from the security score (still shown in the full report) — "
-                              "for deliberate configurations a generic check can't distinguish from a "
-                              "real misconfiguration, e.g. an intentionally public static-website bucket.")
+                         help="JSON file of [{\"check_id\":..,\"resource\":..,\"reason\":..,"
+                              "\"expires\":\"YYYY-MM-DD\"}] findings to exclude from the security "
+                              "score (still shown in the full report) — for deliberate "
+                              "configurations a generic check can't distinguish from a real "
+                              "misconfiguration, e.g. an intentionally public static-website "
+                              "bucket. \"expires\" is optional but recommended: an expired entry "
+                              "falls back into the score with a warning instead of silently "
+                              "staying accepted forever.")
+    parser.add_argument("--history-file",
+                         help="Append this run's score/grade/finding-counts to this JSON file "
+                              "and print the trend vs. the previous run. Opt-in: writes a local "
+                              "file as a side effect, so it's off by default (e.g. for CI).")
+    parser.add_argument("--fix-script",
+                         help="Write a shell script of ready-to-run AWS CLI remediation commands "
+                              "for every finding this can map to one, with the finding's own "
+                              "resource/region substituted in. NEVER executed automatically — "
+                              "review every line before running any of it yourself.")
     return parser.parse_args(argv)
 
 
-def load_accepted_risks(path):
+def load_accepted_risks(path, today=None):
     if not path:
         return set()
+    today = today or date.today()
     with open(path, encoding="utf-8") as f:
         entries = json.load(f)
-    return {(e["check_id"], e["resource"]) for e in entries}
+
+    active = set()
+    for e in entries:
+        expires = e.get("expires")
+        if expires:
+            try:
+                if date.fromisoformat(expires) < today:
+                    print(f"Warning: accepted risk {e['check_id']}/{e['resource']} expired on "
+                          f"{expires} — back to counting against the score.", file=sys.stderr)
+                    continue
+            except ValueError:
+                print(f"Warning: invalid \"expires\" date {expires!r} for "
+                      f"{e['check_id']}/{e['resource']} — ignoring the expiry, treating as active.",
+                      file=sys.stderr)
+        active.add((e["check_id"], e["resource"]))
+    return active
 
 
 def resolve_regions(session, args):
@@ -153,6 +186,26 @@ def main(argv=None):
     if args.html_out:
         write_html_report(result, args.html_out, accepted_risks=accepted_risks)
         print(f"HTML report written to {args.html_out}")
+
+    if args.fix_script:
+        # Never propose "fixing" a finding the operator already deliberately
+        # accepted (accepted-risks.json) -- generating a command to lock down
+        # a bucket that's intentionally a public static website would be
+        # actively wrong advice, not just noise.
+        fixable = [f for f in result.findings if (f.check_id, f.resource) not in accepted_risks]
+        covered, total = write_fix_script(fixable, args.fix_script)
+        skipped = len(result.findings) - total
+        skip_note = f", {skipped} accepted-risk finding(s) skipped" if skipped else ""
+        print(f"\nFix script written to {args.fix_script} ({covered}/{total} findings mapped to a "
+              f"command{skip_note} — review every line before running any of it)")
+
+    if args.history_file:
+        score = compute_score(result, accepted_risks=accepted_risks)
+        entry, history = append_history(score, result, args.history_file)
+        trend = trend_line(entry, history)
+        print(f"\nHistory: {len(history)} run(s) recorded in {args.history_file}")
+        if trend:
+            print(trend)
 
     has_critical_or_high = any(f.severity.value in ("CRITICAL", "HIGH") for f in result.findings)
     return 1 if has_critical_or_high else 0
