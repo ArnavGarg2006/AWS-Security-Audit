@@ -4,14 +4,14 @@ Attack path graph — instead of a flat findings list, builds a graph of IAM
 trust relationships, resource policies, and network reachability, then
 answers "what can actually be reached from here?"
 
-This is deliberately NOT a full IAM policy language evaluator (Allow/Deny
-precedence, NotAction, Condition blocks, resource-level wildcards) — that's
-a genuinely hard problem (it's what tools like Zelkova/IAM Access Analyzer
-exist to solve properly). This uses pragmatic, clearly-labeled heuristics:
-managed-policy-name matching for "is this admin", and Allow+Action:*+
-Resource:* matching for inline/customer policies. Good enough to surface
-real compounding risk; not a guarantee of completeness the way a real
-policy simulator would be — see the README for exactly where the line is.
+Admin/S3-reachability edges are now backed by AWS's own policy simulator
+(`iam:SimulatePrincipalPolicy` — see iam_simulator.py) wherever the caller
+has permission to call it: real Allow/Deny precedence, real merged
+managed+inline+permissions-boundary evaluation, not string matching. The
+original structural heuristics (managed-policy-name matching, Allow+
+Action:*+Resource:* matching) remain ONLY as a fallback for when the
+simulator call itself fails (e.g. missing iam:SimulatePrincipalPolicy) —
+every edge's label says which method actually produced it.
 
 Nodes: Internet, S3 buckets, Lambda functions, IAM roles/users, and a
 "Full Account Compromise" sink representing effective admin access.
@@ -33,6 +33,8 @@ import json
 import sys
 
 import boto3
+
+import iam_simulator
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -164,6 +166,7 @@ def build(session, region):
     s3 = session.client("s3")
     iam = session.client("iam")
     lam = session.client("lambda", region_name=region)
+    account_id = session.client("sts").get_caller_identity()["Account"]
 
     # --- S3 buckets: public reachability ---
     buckets = s3.list_buckets().get("Buckets", [])
@@ -200,25 +203,51 @@ def build(session, region):
     # --- IAM roles referenced by Lambda: admin check + S3 reachability ---
     for role_name in role_to_functions:
         graph.add_node(role_name, "role")
-        is_admin, policy_docs = analyze_iam_principal(iam, "role", role_name, graph)
-        if is_admin:
-            graph.add_edge(role_name, "FULL ACCOUNT COMPROMISE", "AdministratorAccess or *:* policy")
+        principal_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        _add_admin_edge(graph, iam, role_name, principal_arn)
         for b in buckets:
-            for doc in policy_docs:
-                if policy_references_s3(doc, b["Name"]):
-                    graph.add_edge(role_name, b["Name"], "policy grants S3 access")
-                    break
+            _add_s3_edge(graph, iam, role_name, principal_arn, b["Name"])
 
     # --- IAM users: admin check (the interactive/human identity) ---
     for page in iam.get_paginator("list_users").paginate():
         for u in page["Users"]:
             uname = u["UserName"]
             graph.add_node(uname, "user")
-            is_admin, _ = analyze_iam_principal(iam, "user", uname, graph)
-            if is_admin:
-                graph.add_edge(uname, "FULL ACCOUNT COMPROMISE", "AdministratorAccess attached")
+            principal_arn = f"arn:aws:iam::{account_id}:user/{uname}"
+            _add_admin_edge(graph, iam, uname, principal_arn)
 
     return graph
+
+
+def _add_admin_edge(graph, iam, principal_name, principal_arn):
+    """Ground-truth via the simulator; heuristic fallback only if the
+    simulator call itself failed (see iam_simulator.py)."""
+    sim_admin, matched_policies = iam_simulator.simulate_is_admin(iam, principal_arn)
+    if sim_admin is not None:
+        if sim_admin:
+            via = f" via {', '.join(sorted(matched_policies))}" if matched_policies else ""
+            graph.add_edge(principal_name, "FULL ACCOUNT COMPROMISE", f"admin{via} [simulator]")
+        return
+
+    principal_type = "role" if ":role/" in principal_arn else "user"
+    is_admin, _ = analyze_iam_principal(iam, principal_type, principal_name, graph)
+    if is_admin:
+        graph.add_edge(principal_name, "FULL ACCOUNT COMPROMISE",
+                        "AdministratorAccess or *:* policy [heuristic fallback]")
+
+
+def _add_s3_edge(graph, iam, role_name, principal_arn, bucket_name):
+    sim_access, allowed_actions = iam_simulator.simulate_s3_access(iam, principal_arn, bucket_name)
+    if sim_access is not None:
+        if sim_access:
+            graph.add_edge(role_name, bucket_name, f"grants {', '.join(allowed_actions)} [simulator]")
+        return
+
+    _, policy_docs = analyze_iam_principal(iam, "role", role_name, graph)
+    for doc in policy_docs:
+        if policy_references_s3(doc, bucket_name):
+            graph.add_edge(role_name, bucket_name, "policy grants S3 access [heuristic fallback]")
+            break
 
 
 def write_dot(graph, path):

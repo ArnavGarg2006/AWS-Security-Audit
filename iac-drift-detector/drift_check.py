@@ -26,6 +26,8 @@ from pathlib import Path
 import boto3
 import yaml
 
+from root_cause import find_root_cause
+
 sys.stdout.reconfigure(encoding="utf-8")
 
 TEMPLATE_PATH = Path(__file__).parent.parent / "fullstack-contact-app" / "template.yaml"
@@ -36,6 +38,15 @@ API_STAGE = "prod"
 DYNAMODB_TABLE = "contact-form-submissions"
 WAF_NAME = "contact-form-waf"
 WAF_ID = "570ea088-9e4c-4fa0-b29e-70a6b5095188"
+
+# resource kind (as used in DriftReport rows) -> the identifier CloudTrail
+# events for that resource will contain, for root-cause correlation.
+RESOURCE_IDENTIFIERS = {
+    "Lambda": LAMBDA_FUNCTION_NAME,
+    "API Gateway stage": API_ID,
+    "DynamoDB table": DYNAMODB_TABLE,
+    "WAF rate rule": WAF_ID,
+}
 
 
 def _cfn_multi_constructor(loader, tag_suffix, node):
@@ -65,7 +76,7 @@ class DriftReport:
         self.checks.append((resource, field, expected, actual, drifted))
         return drifted
 
-    def print_and_exit(self):
+    def print_and_exit(self, cloudtrail=None):
         drifted = [c for c in self.checks if c[4]]
         print(f"{'Resource':30} {'Field':22} {'Template':>12}  {'Live':>12}  Status")
         print("-" * 95)
@@ -74,6 +85,25 @@ class DriftReport:
             print(f"{resource:30} {field:22} {str(expected):>12}  {str(actual):>12}  {status}")
 
         print(f"\n{len(drifted)}/{len(self.checks)} field(s) drifted from template.yaml.")
+
+        if drifted and cloudtrail is not None:
+            print("\nRoot cause (best-effort, from CloudTrail — last 90 days):")
+            seen_resources = set()
+            for resource, field, expected, actual, is_drift in drifted:
+                if resource in seen_resources:
+                    continue
+                seen_resources.add(resource)
+                identifier = RESOURCE_IDENTIFIERS.get(resource)
+                if not identifier:
+                    continue
+                cause = find_root_cause(cloudtrail, resource, identifier)
+                if cause:
+                    print(f"  {resource}: changed by {cause['username']} via {cause['event_name']} "
+                          f"at {cause['event_time']}")
+                else:
+                    print(f"  {resource}: no matching CloudTrail event in the last 90 days "
+                          f"(older than lookup_events retention, or made outside a logged API call)")
+
         sys.exit(1 if drifted else 0)
 
 
@@ -148,7 +178,8 @@ def main():
         except Exception as e:
             print(f"Could not run {check_fn.__name__}: {e}", file=sys.stderr)
 
-    report.print_and_exit()
+    cloudtrail = session.client("cloudtrail", region_name=args.region)
+    report.print_and_exit(cloudtrail=cloudtrail)
 
 
 if __name__ == "__main__":

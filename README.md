@@ -75,12 +75,24 @@ python audit.py --accept-risk-file accepted-risks.json
 ```
 
 ```json
-[{"check_id": "S3.1", "resource": "my-bucket", "reason": "intentional - static website hosting"}]
+[{"check_id": "S3.1", "resource": "my-bucket", "reason": "intentional - static website hosting", "expires": "2027-03-01"}]
 ```
+
+`expires` is optional but recommended: an expired entry falls back into the score (with a
+warning printed) instead of a deliberate exception silently becoming a permanent blind spot.
 
 <div align="center">
   <img src=".github/assets/score-gauge.svg" alt="Animated gauge sweeping from a 64/D score up to a 94/A score as accepted-risks.json is applied, needle and readout in sync" width="85%">
 </div>
+
+Two more opt-in flags round out the score/fix loop: `--history-file PATH` appends every
+run's score/grade/finding-counts to a small JSON file and prints the trend against the
+previous run (so a regression — "this was a 94 last week, it's a 74 now" — shows up in the
+console output itself), and `--fix-script PATH` writes a shell script of ready-to-run AWS
+CLI commands for every finding that maps to one, with the finding's own resource/region
+substituted in. Neither is ever executed automatically; `--fix-script` also respects
+`--accept-risk-file` and skips generating a "fix" for anything already deliberately
+accepted.
 
 <details>
 <summary><strong>Full CLI reference</strong></summary>
@@ -97,6 +109,10 @@ python audit.py [options]
 --no-console          Suppress the console table
 --accept-risk-file PATH   JSON file of findings to exclude from the score (still
                           shown in the full report — see above)
+--history-file PATH   Append this run's score/grade to a JSON history file
+                       and print the trend vs. the previous run
+--fix-script PATH     Write ready-to-run AWS CLI remediation commands for
+                       every findable check_id (never executed automatically)
 ```
 
 ```bash
@@ -177,6 +193,12 @@ python verify_findings.py report.json
 - **EC2 open-security-group findings** — re-fetches the *current* live security group and
   re-runs [`sg-firewall-simulator`](sg-firewall-simulator/)'s real CIDR-containment logic
   against it, not a cached finding
+- **RDS public-accessibility findings** — a real TCP connection attempt to the instance's
+  live endpoint/port, since a security group can block everything even with
+  `PubliclyAccessible=true` set
+- **IAM no-MFA findings** — re-lists the user's MFA devices right now via
+  `list_mfa_devices`, instead of trusting the credential report snapshot (which AWS
+  refreshes on its own internal schedule, not on request)
 
 ## Reasoning about reachability, not just listing findings
 
@@ -209,8 +231,8 @@ sandbox data, no invented findings.
 | 🌩️ [**lambda-s3-audit-webapp/**](lambda-s3-audit-webapp/) | Same audit logic behind an IAM-authenticated Lambda Function URL | Live, returns HTML/JSON on demand |
 | 📬 [**fullstack-contact-app/**](fullstack-contact-app/) | Contact form grown into a production-shaped stack: DynamoDB, SNS/SES, WAF, CloudWatch alarms, X-Ray, an AWS SAM template, and a GitHub Actions pipeline with its own scoped-down IAM user | Live end-to-end; first CI-driven deploy succeeded on the first real push |
 | 🔎 [**webapp-vuln-scanner/**](webapp-vuln-scanner/) | Headers/CORS/injection/rate-limit scanner, run against `fullstack-contact-app` | **12 → 7 findings** after fixes; chasing its own false negatives surfaced a real account-level Lambda concurrency quota (10, vs AWS's default 1000) |
-| 🕸️ [**attack-path-graph/**](attack-path-graph/) | Graphs IAM/S3/Lambda relationships to answer "what can actually be reached from here?" instead of a flat findings list | Correctly found no Internet→compromise path, but caught that a Lambda role's `ReadOnlyAccess` reaches every bucket including the CloudTrail logs — a real gap in its own first heuristic, fixed after live testing |
-| 🌊 [**iac-drift-detector/**](iac-drift-detector/) | Diffs `template.yaml`'s declared state against live resources — no CloudFormation stack exists to run native drift detection against, since these were hand-deployed | Verified both directions: clean on the real stack, then caught a deliberately-introduced real config change (Lambda memory 128→256MB), then reverted |
+| 🕸️ [**attack-path-graph/**](attack-path-graph/) | Graphs IAM/S3/Lambda relationships (now backed by AWS's real policy simulator, not heuristics) and simulates per-principal blast radius, to answer "what can actually be reached, and what would it be worth" | Ground-truth simulation found the account's admin user holds admin via **3 independent policies**, not the 1 the old heuristic checked by name; blast-radius simulation found `s3-audit-lambda-role` can also read DynamoDB/SSM/logs, not just S3 |
+| 🌊 [**iac-drift-detector/**](iac-drift-detector/) | Diffs `template.yaml`'s declared state against live resources and attributes any drift to the real CloudTrail event/principal that caused it — no CloudFormation stack exists to run native drift detection against, since these were hand-deployed | Verified both directions: clean on the real stack, then caught a deliberately-introduced real config change (Lambda memory 128→256MB) and correctly attributed it to the real user/timestamp — after fixing a bug where Lambda's versioned CloudTrail event names silently broke the lookup |
 | 💸 [**cost-of-insecurity/**](cost-of-insecurity/) | Reframes findings in dollars: bounded normal cost vs. unbounded exploited-cost liability | Caught and fixed a real bug in itself (wrong CloudWatch region + an oversized query window silently swallowed by a broad `except`) before reporting the real bucket size |
 | 🚦 [**shift-left-scanner/**](shift-left-scanner/) | Scans `template.yaml` for misconfigurations *before* deployment, wired into the GitHub Actions pipeline as a gate `deploy` now depends on | Verified against both the real (1 known finding) and a deliberately broken (6 findings, 5 blocking) template |
 | 🧬 [**s3-integrity-monitor/**](s3-integrity-monitor/) | S3 Event Notifications → Lambda → DynamoDB → SNS, watching the CloudTrail log bucket for tampering | Verified live: create (silent) → overwrite (HIGH alert) → delete (CRITICAL alert) |

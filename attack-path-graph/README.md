@@ -4,14 +4,41 @@ Instead of a flat findings list, builds a graph of IAM trust relationships, reso
 policies, and network reachability, and answers "what can actually be reached from here?"
 — the jump from checklist to compounding risk assessment.
 
-## Honesty about scope
+## Ground truth, not just heuristics
 
-This is **not** a full IAM policy language evaluator — that's a genuinely hard problem
-(Allow/Deny precedence, `NotAction`, `Condition` blocks, resource-ARN wildcards), and it's
-what tools like IAM Access Analyzer/Zelkova exist to solve properly. This uses pragmatic,
-clearly-labeled heuristics instead: managed-policy-name matching for "is this admin," and
-structural Allow+`s3:*`-style-action+Resource matching for "can this reach that bucket."
-Good enough to surface real compounding risk; not a completeness guarantee.
+Admin/S3-reachability edges are now backed by AWS's own policy evaluator —
+[`iam_simulator.py`](iam_simulator.py) calls `iam:SimulatePrincipalPolicy`, which runs the
+query against the principal's real merged managed+inline+permissions-boundary policy set
+exactly the way IAM does at request time. The original structural heuristics (managed-
+policy-name matching, Allow+`s3:*`-style-action+Resource matching) remain **only** as a
+fallback for when the simulator call itself fails — every edge label says which method
+actually produced it (`[simulator]` vs `[heuristic fallback]`), so nothing is silently
+guessed without saying so. This still isn't a claim of *complete* coverage — the simulator
+is queried with a curated, documented battery of actions per question ("is this admin,"
+"can this reach S3"), not every IAM action that could conceivably matter — but it's real
+AWS policy evaluation, not string matching, for everything it does check.
+
+**Ground truth found something the heuristic never could.** Simulating the account's IAM
+user found it has admin-equivalent access via **three independent policies** —
+`AdministratorAccess`, `AdministratorAccess-Amplify`, and `AIDevOpsAgentActionsPolicy` —
+not just the one the old heuristic checked by literal name. Removing `AdministratorAccess`
+alone, believing the admin finding fixed, would leave two other paths to full account
+compromise completely invisible.
+
+## Blast radius, not just reachability
+
+[`blast_radius.py`](blast_radius.py) answers a different question than the graph: not "can
+this be reached from the internet" but "if this credential leaks *right now*, what can
+actually be done with it" — independent of network path. It runs the same simulator against
+every IAM role/user with a curated battery of high-impact actions grouped by what an
+attacker would use them for (**Exfiltrate**, **Persist**, **Pivot**, **Destroy**), and flags
+which categories are genuinely open per principal.
+
+Run against this account, it found that `s3-audit-lambda-role` — whose only known job, per
+the graph above, is reading S3 buckets — can *also* exfiltrate via `dynamodb:GetItem`,
+`dynamodb:Scan`, `ssm:GetParameter`, and `logs:GetLogEvents`, because `ReadOnlyAccess` grants
+all of that too. The graph only ever said "reaches every bucket"; the blast-radius battery
+is what actually shows the reach goes well beyond S3.
 
 ## What it models
 
@@ -59,7 +86,12 @@ behavior: a graph traversal answers "is there a pivot," not "is everything fine.
 ```bash
 pip install -r requirements.txt
 python build_graph.py [--region ap-south-1] [--dot graph.dot]
+python blast_radius.py [--region ap-south-1]
 ```
 
 `--dot` writes a Graphviz file; render it with `dot -Tpng graph.dot -o graph.png` if you
-have Graphviz installed. Exit code `1` if any Internet→compromise path exists, `0` otherwise.
+have Graphviz installed. Exit code `1` if any Internet→compromise path exists (`build_graph.py`)
+or any non-admin principal has an open Persist/Pivot/Destroy category (`blast_radius.py`), `0`
+otherwise. Both need `iam:SimulatePrincipalPolicy` permission on the caller to get ground-truth
+edges — without it, `build_graph.py` silently falls back to the heuristic and says so in the
+edge label; `blast_radius.py` reports the simulator call failed for that principal and skips it.
