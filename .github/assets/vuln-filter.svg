@@ -1,0 +1,79 @@
+<svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" font-family="-apple-system, Segoe UI, Arial, sans-serif">
+  <defs>
+    <linearGradient id="vfBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f0c29"/>
+      <stop offset="55%" stop-color="#302b63"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <filter id="vfGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="vfToReject" d="M300,130 L620,70" fill="none"/>
+    <path id="vfToKeep" d="M300,130 L620,190" fill="none"/>
+  </defs>
+
+  <rect x="0" y="0" width="900" height="260" rx="18" fill="url(#vfBg)"/>
+  <text x="450" y="30" font-size="13" fill="#a7a9be" text-anchor="middle">NVD's raw CPE match includes bystanders — vulnerable:True is what actually counts</text>
+
+  <path d="M112,130 L268,130" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+  <path d="M300,130 L620,70" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+  <path d="M300,130 L620,190" stroke="#3d3a6b" stroke-width="2" stroke-dasharray="4 5" fill="none"/>
+
+  <!-- source: raw NVD match -->
+  <g>
+    <rect x="48" y="98" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <text x="80" y="138" font-size="26" text-anchor="middle">🔍</text>
+    <text x="80" y="178" font-size="11" fill="#a7a9be" text-anchor="middle">NVD raw match</text>
+    <text x="80" y="192" font-size="11" fill="#a7a9be" text-anchor="middle">python3.13: 22 CVEs</text>
+  </g>
+
+  <!-- filter -->
+  <g>
+    <rect x="268" y="98" width="64" height="64" rx="14" fill="#161a22" stroke="#7f5af0" stroke-width="1.5"/>
+    <circle cx="300" cy="130" r="34" fill="#7f5af0" opacity="0" filter="url(#vfGlow)">
+      <animate attributeName="opacity" values="0;0.5;0" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="300" y="140" font-size="26" text-anchor="middle">🧪</text>
+    <text x="300" y="180" font-size="11" fill="#c8b6ff" text-anchor="middle">vulnerable:True</text>
+    <text x="300" y="194" font-size="11" fill="#c8b6ff" text-anchor="middle">filter</text>
+  </g>
+
+  <!-- rejected outcome -->
+  <g>
+    <rect x="588" y="38" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+    <circle cx="620" cy="70" r="34" fill="#ff4d4f" opacity="0" filter="url(#vfGlow)">
+      <animate attributeName="opacity" values="0;0;0.5;0" keyTimes="0;0.7;0.85;1" dur="3s" repeatCount="indefinite"/>
+    </circle>
+    <text x="620" y="80" font-size="26" text-anchor="middle">🏢</text>
+    <text x="620" y="118" font-size="10" fill="#ff7a75" text-anchor="middle">✕ CVE-2020-29396</text>
+  </g>
+  <text x="770" y="70" font-size="10" fill="#a7a9be" text-anchor="middle">Odoo bug — Python only</text>
+  <text x="770" y="83" font-size="10" fill="#a7a9be" text-anchor="middle">listed as "runs on", rejected</text>
+
+  <!-- kept outcome -->
+  <g>
+    <rect x="588" y="158" width="64" height="64" rx="14" fill="#161a22" stroke="#2cb67d" stroke-width="1.5"/>
+    <circle cx="620" cy="190" r="34" fill="#2cb67d" opacity="0" filter="url(#vfGlow)">
+      <animate attributeName="opacity" values="0;0.6;0" dur="3s" begin="0.4s" repeatCount="indefinite"/>
+    </circle>
+    <text x="620" y="200" font-size="26" text-anchor="middle">🐍</text>
+    <text x="620" y="238" font-size="10" fill="#7ee8b8" text-anchor="middle">✓ 18 genuine CVEs</text>
+  </g>
+  <text x="770" y="190" font-size="10" fill="#a7a9be" text-anchor="middle">real vulnerable:True</text>
+  <text x="770" y="203" font-size="10" fill="#a7a9be" text-anchor="middle">matches, kept</text>
+
+  <!-- traveling pulses -->
+  <circle r="6" fill="#fffffe" filter="url(#vfGlow)">
+    <animateMotion dur="3s" repeatCount="indefinite">
+      <mpath xlink:href="#vfToReject" href="#vfToReject"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#fffffe;#ff4d4f" keyTimes="0;0.75;1" dur="3s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="6" fill="#fffffe" filter="url(#vfGlow)">
+    <animateMotion dur="3s" begin="0.4s" repeatCount="indefinite">
+      <mpath xlink:href="#vfToKeep" href="#vfToKeep"/>
+    </animateMotion>
+    <animate attributeName="fill" values="#fffffe;#fffffe;#2cb67d" keyTimes="0;0.75;1" dur="3s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+</svg>

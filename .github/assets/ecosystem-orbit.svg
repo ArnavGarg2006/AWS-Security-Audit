@@ -20,118 +20,128 @@
   </defs>
 
   <rect x="0" y="0" width="760" height="470" rx="18" fill="url(#ecoBg)"/>
-  <text x="380" y="34" font-size="14" fill="#a7a9be" text-anchor="middle">One audit engine. Nine satellite tools, all pointed at the same real AWS account.</text>
+  <text x="380" y="24" font-size="14" fill="#a7a9be" text-anchor="middle">One audit engine. Ten satellite tools, all pointed at the same real AWS account.</text>
 
   <!-- rotating radar sweep -->
-  <g transform="translate(380,240)">
-    <polygon points="0,0 190,-30 190,30" fill="url(#sweepGrad)">
-      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="9s" repeatCount="indefinite"/>
+  <g transform="translate(380,230)">
+    <polygon points="0,0 190,-27 190,27" fill="url(#sweepGrad)">
+      <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="10s" repeatCount="indefinite"/>
     </polygon>
   </g>
 
   <!-- spokes -->
   <g stroke="#3d3a6b" stroke-width="1.5" stroke-dasharray="3 6" fill="none">
-    <line x1="380" y1="240" x2="380" y2="97"/>
-    <line x1="380" y1="240" x2="486" y2="136"/>
-    <line x1="380" y1="240" x2="542" y2="233"/>
-    <line x1="380" y1="240" x2="523" y2="345"/>
-    <line x1="380" y1="240" x2="436" y2="417"/>
-    <line x1="380" y1="240" x2="324" y2="417"/>
-    <line x1="380" y1="240" x2="237" y2="345"/>
-    <line x1="380" y1="240" x2="218" y2="233"/>
-    <line x1="380" y1="240" x2="274" y2="136"/>
+    <line x1="380" y1="230" x2="380" y2="97"/>
+    <line x1="380" y1="230" x2="477" y2="129"/>
+    <line x1="380" y1="230" x2="537" y2="211"/>
+    <line x1="380" y1="230" x2="537" y2="313"/>
+    <line x1="380" y1="230" x2="477" y2="395"/>
+    <line x1="380" y1="230" x2="380" y2="427"/>
+    <line x1="380" y1="230" x2="283" y2="395"/>
+    <line x1="380" y1="230" x2="223" y2="313"/>
+    <line x1="380" y1="230" x2="223" y2="211"/>
+    <line x1="380" y1="230" x2="283" y2="129"/>
   </g>
 
   <!-- hub -->
-  <circle cx="380" cy="240" r="70" fill="url(#hubGlow)">
+  <circle cx="380" cy="230" r="70" fill="url(#hubGlow)">
     <animate attributeName="r" values="60;74;60" dur="3s" repeatCount="indefinite"/>
   </circle>
-  <circle cx="380" cy="240" r="46" fill="#161a22" stroke="#7f5af0" stroke-width="2"/>
-  <text x="380" y="234" font-size="26" text-anchor="middle">🛡️</text>
-  <text x="380" y="258" font-size="12" fill="#e0def4" text-anchor="middle">Audit Core</text>
+  <circle cx="380" cy="230" r="46" fill="#161a22" stroke="#7f5af0" stroke-width="2"/>
+  <text x="380" y="224" font-size="26" text-anchor="middle">🛡️</text>
+  <text x="380" y="248" font-size="12" fill="#e0def4" text-anchor="middle">Audit Core</text>
 
-  <!-- satellites: label, emoji, x, y, begin -->
+  <!-- satellites -->
   <g font-size="12" fill="#a7a9be" text-anchor="middle">
 
     <g>
       <rect x="348" y="65" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
       <circle cx="380" cy="97" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="0s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="0s" repeatCount="indefinite"/>
       </circle>
       <text x="380" y="108" font-size="26" text-anchor="middle">☁️</text>
       <text x="380" y="147">Lambda web app</text>
     </g>
 
     <g>
-      <rect x="454" y="104" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="486" cy="136" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="1s" repeatCount="indefinite"/>
+      <rect x="445" y="97" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="477" cy="129" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="1s" repeatCount="indefinite"/>
       </circle>
-      <text x="486" y="147" font-size="26" text-anchor="middle">📬</text>
-      <text x="486" y="186">Contact form</text>
+      <text x="477" y="140" font-size="26" text-anchor="middle">📬</text>
+      <text x="477" y="179">Contact form</text>
     </g>
 
     <g>
-      <rect x="510" y="201" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="542" cy="233" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="2s" repeatCount="indefinite"/>
+      <rect x="505" y="179" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="537" cy="211" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="2s" repeatCount="indefinite"/>
       </circle>
-      <text x="542" y="244" font-size="26" text-anchor="middle">🔎</text>
-      <text x="542" y="283">Vuln scanner</text>
+      <text x="537" y="222" font-size="26" text-anchor="middle">🔎</text>
+      <text x="537" y="261">Vuln scanner</text>
     </g>
 
     <g>
-      <rect x="491" y="313" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="523" cy="345" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="3s" repeatCount="indefinite"/>
+      <rect x="505" y="281" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="537" cy="313" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="3s" repeatCount="indefinite"/>
       </circle>
-      <text x="523" y="356" font-size="26" text-anchor="middle">🕸️</text>
-      <text x="523" y="395">Attack path</text>
+      <text x="537" y="324" font-size="26" text-anchor="middle">🕸️</text>
+      <text x="537" y="363">Attack path</text>
     </g>
 
     <g>
-      <rect x="404" y="385" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="436" cy="417" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="4s" repeatCount="indefinite"/>
+      <rect x="445" y="363" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="477" cy="395" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="4s" repeatCount="indefinite"/>
       </circle>
-      <text x="436" y="428" font-size="26" text-anchor="middle">🌊</text>
-      <text x="436" y="450" font-size="11">Drift detector</text>
+      <text x="477" y="406" font-size="26" text-anchor="middle">🌊</text>
+      <text x="477" y="437" font-size="11">Drift detector</text>
     </g>
 
     <g>
-      <rect x="292" y="385" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="324" cy="417" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="5s" repeatCount="indefinite"/>
+      <rect x="348" y="395" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="380" cy="427" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="5s" repeatCount="indefinite"/>
       </circle>
-      <text x="324" y="428" font-size="26" text-anchor="middle">💸</text>
-      <text x="324" y="450" font-size="11">Cost estimator</text>
+      <text x="380" y="438" font-size="26" text-anchor="middle">💸</text>
+      <text x="380" y="463" font-size="11">Cost estimator</text>
     </g>
 
     <g>
-      <rect x="205" y="313" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="237" cy="345" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="6s" repeatCount="indefinite"/>
+      <rect x="251" y="363" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="283" cy="395" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="6s" repeatCount="indefinite"/>
       </circle>
-      <text x="237" y="356" font-size="26" text-anchor="middle">🚦</text>
-      <text x="237" y="395">Shift-left scan</text>
+      <text x="283" y="406" font-size="26" text-anchor="middle">🚦</text>
+      <text x="283" y="437" font-size="11">Shift-left scan</text>
     </g>
 
     <g>
-      <rect x="186" y="201" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="218" cy="233" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="7s" repeatCount="indefinite"/>
+      <rect x="191" y="281" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="223" cy="313" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="7s" repeatCount="indefinite"/>
       </circle>
-      <text x="218" y="244" font-size="26" text-anchor="middle">🧬</text>
-      <text x="218" y="283">Integrity monitor</text>
+      <text x="223" y="324" font-size="26" text-anchor="middle">🧬</text>
+      <text x="223" y="363">Integrity monitor</text>
     </g>
 
     <g>
-      <rect x="242" y="104" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
-      <circle cx="274" cy="136" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
-        <animate attributeName="opacity" values="0;0.55;0" dur="9s" begin="8s" repeatCount="indefinite"/>
+      <rect x="191" y="179" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="223" cy="211" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="8s" repeatCount="indefinite"/>
       </circle>
-      <text x="274" y="147" font-size="26" text-anchor="middle">🧱</text>
-      <text x="274" y="186">Firewall sim</text>
+      <text x="223" y="222" font-size="26" text-anchor="middle">🧱</text>
+      <text x="223" y="261">Firewall sim</text>
+    </g>
+
+    <g>
+      <rect x="251" y="97" width="64" height="64" rx="14" fill="#161a22" stroke="#2a2f3a"/>
+      <circle cx="283" cy="129" r="32" fill="#7f5af0" opacity="0" filter="url(#ecoGlow)">
+        <animate attributeName="opacity" values="0;0.55;0" dur="10s" begin="9s" repeatCount="indefinite"/>
+      </circle>
+      <text x="283" y="140" font-size="26" text-anchor="middle">🦠</text>
+      <text x="283" y="179">Vuln intel</text>
     </g>
 
   </g>
