@@ -237,6 +237,7 @@ sandbox data, no invented findings.
 | 🚦 [**shift-left-scanner/**](shift-left-scanner/) | Scans `template.yaml` for misconfigurations *before* deployment, wired into the GitHub Actions pipeline as a gate `deploy` now depends on | Verified against both the real (1 known finding) and a deliberately broken (6 findings, 5 blocking) template |
 | 🧬 [**s3-integrity-monitor/**](s3-integrity-monitor/) | S3 Event Notifications → Lambda → DynamoDB → SNS, watching the CloudTrail log bucket for tampering | Verified live: create (silent) → overwrite (HIGH alert) → delete (CRITICAL alert) |
 | 🧱 [**sg-firewall-simulator/**](sg-firewall-simulator/) | Evaluates simulated packets against real security group rules, not an invented rule set | Verified both directions: current account shows 0 exposures; a throwaway open-SSH group was correctly flagged, then deleted |
+| 🦠 [**vuln-intel/**](vuln-intel/) | Cross-references deployed Lambda runtimes (NVD) and pinned npm dependencies (OSV.dev) against real public CVE data | Caught a real NVD false-positive mechanism live — a CVE actually about Odoo was matching Python 3.13 via an open-ended "runs on" context — and fixed it before shipping; 311 real pinned dependencies scanned clean |
 
 <div align="center">
 <sub>Built to answer "what's actually wrong with my AWS account" — not to guess.</sub>
