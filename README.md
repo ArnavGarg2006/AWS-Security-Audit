@@ -2,7 +2,7 @@
 
 # 🛡️ AWS Security Audit
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&pause=1200&color=A78BFA&center=true&vCenter=true&width=600&lines=Read-only.+No+writes%2C+no+deletes%2C+no+surprises.;Scans+IAM%2C+S3%2C+EC2%2C+RDS%2C+CloudTrail%2C+Config%2C+GuardDuty.;Scores+it%2C+verifies+it%2C+maps+what's+reachable.;9+satellite+tools.+CLI+today%2C+Lambda+web+app+too.)](https://github.com/ArnavGarg2006/AWS-Security-Audit)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&size=18&pause=1200&color=A78BFA&center=true&vCenter=true&width=600&lines=Read-only.+No+writes%2C+no+deletes%2C+no+surprises.;Scans+IAM%2C+S3%2C+EC2%2C+RDS%2C+CloudTrail%2C+Config%2C+GuardDuty.;Scores+it%2C+verifies+it%2C+maps+what's+reachable.;10+satellite+tools.+CLI+today%2C+Lambda+web+app+too.)](https://github.com/ArnavGarg2006/AWS-Security-Audit)
 
 ![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white)
 ![boto3](https://img.shields.io/badge/boto3-AWS_SDK-FF9900?logo=amazonaws&logoColor=white)
@@ -217,13 +217,33 @@ attached directly, and that `s3-audit-lambda-role`'s `ReadOnlyAccess` reaches ev
 bucket in the account. Neither of those needed a network path to matter; the graph
 reports them as their own class of finding instead of burying them in a checklist.
 
+## Vulnerability intelligence: public data, not just AWS config
+
+Everything above answers "is this misconfigured." [`vuln-intel/`](vuln-intel/) asks a
+different question: is the *software actually running* — this account's real Lambda
+runtimes and its real pinned `package-lock.json` — affected by a published CVE at all.
+Two public sources for two different questions: NVD (CPE version-range match) for "is
+this runtime's language version affected," OSV.dev (npm-native batch query) for "does
+this exact pinned dependency version have a known vulnerability."
+
+<div align="center">
+  <img src=".github/assets/vuln-filter.svg" alt="Animated diagram: NVD's raw CPE match for python3.13 returns 22 CVEs, a vulnerable:True filter rejects a bystander Odoo CVE that only listed Python as a 'runs on' context, keeping 18 genuine CVEs" width="100%">
+</div>
+
+Building it caught a real false-positive mechanism in NVD's own API before it shipped: a
+precise CPE version-range match still returned a CVE that was actually about **Odoo**,
+because NVD lists Python 3.6+ as a `vulnerable: False` "runs on" context for it with an
+open-ended range that sweeps in every future Python release. Filtering to only
+`vulnerable: True` matches dropped `nodejs20.x` from 6 spurious CVEs to 0, and
+`python3.13` from 22 to 18 genuine ones.
+
 ## Also in this repo
 
 Everything below runs against the same real AWS account this audit tool scans — no
 sandbox data, no invented findings.
 
 <div align="center">
-  <img src=".github/assets/ecosystem-orbit.svg" alt="Animated diagram: a radar sweep rotating around a central Audit Core node, lighting up nine orbiting satellite tools in sequence — Lambda web app, contact form, vuln scanner, attack path graph, drift detector, cost estimator, shift-left scanner, integrity monitor, and firewall simulator" width="100%">
+  <img src=".github/assets/ecosystem-orbit.svg" alt="Animated diagram: a radar sweep rotating around a central Audit Core node, lighting up ten orbiting satellite tools in sequence — Lambda web app, contact form, vuln scanner, attack path graph, drift detector, cost estimator, shift-left scanner, integrity monitor, firewall simulator, and vuln intel" width="100%">
 </div>
 
 | Project | What it does | Verified outcome |
